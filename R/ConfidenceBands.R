@@ -371,7 +371,7 @@ SCBglm <- function( x=seq(0,1,length.out=100), y, X=NULL, c=c(1,-1), xlim=c(0,1)
 #'
 #' @param Y Array of dimension K_1 x ... x K_d x N containing N-realizations of a Gaussian random field over a d-dimensional domain.
 #' @param level Numeric the targeted covering probability. Must be strictly between 0 and 1.
-#' @param method Stringspecifying the method to construt the scb, i.e. estimatate the quantile. Current options are "tGKF", "GKF", "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt". Default value is "tGKF".
+#' @param method String specifying the method to construct the scb, i.e. estimatate the quantile. Current options are "tGKF", "GKF", "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt". Default value is "tGKF".
 #' @param param_method list containing the parameters for 'method'. The list must contain the following elements, otherwise default values are set:
 #'  \itemize{
 #'   \item For method either "tGKF" or "GKF": L0 (integer) the Euler characteristic of the domain of the random fields Y [default is 1], LKC_estim (function) a function estimating the Lipschitz-Killing curvatures from the normalized residuals [default is LKC_estim_direct].
@@ -458,24 +458,17 @@ scb_SNR <- function( Y, level=.95, method="GKF", param_method=NULL ){
   ### get number of sample curves
   N    = dimY[length(dimY)]
 
-  ###### Compute the necessary statistics from the data for residuals
-  ### Pointwise sample means
-  mY   = array( rep(apply( Y, 1:D, mean ),N), dim = c(dimY[1:D], N) );
-  ### Pointwise sample variances
-  sdY  = array( rep(sqrt(apply( Y, 1:D, var )),N), dim = c(dimY[1:D], N) );
+  ###### Compute the SNR residuals and necessary statistics from the data
+  R = residualsSNR(Y, bias=TRUE);
 
   ###### Estimate the quantile of the maximum of the absolute value of the limiting Gaussian process of the CLT for the mean
   if( method=="tGKF" ){
-    # Compute the modified residuals with asymptotically the correct distribution to estimate the LKCs
-    R = ( (Y-mY)/sdY - mY/(2*sdY)*(((Y-mY)/sdY)^2-1) ) / sqrt(1+mY^2/(2*sdY^2) );
     ### Estimate the LKCs
-    LKC = c(param_method$L0, param_method$LKC_estim(R));
+    LKC = c(param_method$L0, param_method$LKC_estim(R$res));
     q   = GKFquantileApprox( alpha = (1-level)/2, LKC, field="t", df=N-1 );
   }else if( method=="GKF" ){
-    # Compute the modified residuals with asymptotically the correct distribution to estimate the LKCs
-    R = ( (Y-mY)/sdY - mY/(2*sdY)*(((Y-mY)/sdY)^2-1) ) / sqrt(1+mY^2/(2*sdY^2) );
     ### Estimate the LKCs
-    LKC = c(param_method$L0, param_method$LKC_estim(R));
+    LKC = c(param_method$L0, param_method$LKC_estim(R$res));
     q   = GKFquantileApprox( alpha = (1-level)/2, LKC, field="Gauss", df=1 );
   }else if( method=="Bootstrap" ){
     # Compute the modified residuals with asymptotically the correct distribution to estimate the LKCs
@@ -489,30 +482,18 @@ scb_SNR <- function( Y, level=.95, method="GKF", param_method=NULL ){
     ### Estimate the quantile
     q <- NonParametricBootstrap( R, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="t" ) )$q
   }else if( method=="MultiplierBootstrap" ){
-    # Compute the modified residuals with asymptotically the correct distribution to estimate the LKCs
-    R = ( (Y-mY)/sdY - mY/(2*sdY)*(((Y-mY)/sdY)^2-1) ) / sqrt(1+mY^2/(2*sdY^2) );
     ### Estimate the quantile
-    q <- MultiplierBootstrap( R, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="regular" ) )$q
+    q <- MultiplierBootstrap( R$res, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="regular" ) )$q
   }else{
-    # Compute the modified residuals with asymptotically the correct distribution to estimate the LKCs
-    R = ( (Y-mY)/sdY - mY/(2*sdY)*(((Y-mY)/sdY)^2-1) ) / sqrt(1+mY^2/(2*sdY^2) );
     ### Estimate the quantile
-    q <- MultiplierBootstrap( R, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="t") )$q
+    q <- MultiplierBootstrap( R$res, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="t") )$q
   }
 
-  ###### compute the simultaneous confidence bands
-  ### Pointwise sample means
-  mY   = apply( Y, 1:D, mean );
-  ### Pointwise sample variances
-  sdY = sqrt(apply( Y, 1:D, var ));
-  ### Pointwise estimate of the SNR and its asymptotic variance
-  nu        = mY / sdY;
-  sd_nuasym = sqrt(1+mY^2/(2*sdY^2) );
-
+  ### Compute the SCBs upper and lower bounds
   scb    <- list()
-  scb$lo <- nu - q *  sd_nuasym / sqrt( N )
-  scb$up <- nu + q *  sd_nuasym / sqrt( N )
+  scb$lo <- R$SNR - q *  R$asymptsd / sqrt( N )
+  scb$up <- R$SNR + q *  R$asymptsd / sqrt( N )
 
   ### Return a list containing estimate of the mean, SCBs etc.
-  list( hatnu = nu, scb = scb, level = level, q = q, res=R )
+  list( hatnu = R$SNR, scb = scb, level = level, q = q, res=R$res )
 }
