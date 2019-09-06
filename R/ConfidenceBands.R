@@ -16,7 +16,7 @@
 #'
 #' @param Y Array of dimension K_1 x ... x K_d x N containing N-realizations of a Gaussian random field over a d-dimensional domain.
 #' @param level Numeric the targeted covering probability. Must be strictly between 0 and 1.
-#' @param method Stringspecifying the method to construt the scb, i.e. estimatate the quantile. Current options are "tGKF", "GKF", "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt". Default value is "tGKF".
+#' @param method String specifying the method to construt the scb, i.e. estimatate the quantile. Current options are "tGKF", "GKF", "NonparametricBootstrap", "MultiplierBootstrap". Default value is "tGKF".
 #' @param param_method list containing the parameters for 'method'. The list must contain the following elements, otherwise default values are set:
 #'  \itemize{
 #'   \item For method either "tGKF" or "GKF": L0 (integer) the Euler characteristic of the domain of the random fields Y [default is 1], LKC_estim (function) a function estimating the Lipschitz-Killing curvatures from the normalized residuals [default is LKC_estim_direct].
@@ -47,7 +47,7 @@ scb_mean <- function( Y, level=.95, method="tGKF", param_method=NULL ){
 
   ### Check input method
   if( is.character(method) ){
-    if( !(method%in%c("tGKF", "GKF", "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt")) ){
+    if( !(method%in%c("tGKF", "GKF", "NonParametricBootstrap", "MultiplierBootstrap")) ){
       stop("Choose a valid option from the available quantile approximations. Please, check the help page.")
     }
   }else{stop("Choose a valid option from the available quantile approximations. Please, check the help page.")}
@@ -77,8 +77,8 @@ scb_mean <- function( Y, level=.95, method="tGKF", param_method=NULL ){
             }
           }
     }
-    ## Check input for methods "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt" and put the default values, if necessary.
-    if( method%in%c("Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt") ){
+    ## Check input for methods "onParametricBootstrap" and "MultiplierBootstrap" and put the default values, if necessary.
+    if( method%in%c("NonParametricBootstrap", "MultiplierBootstrap") ){
           if( is.null(param_method$Mboots) ){
             param_method$Mboots = 5e3
           }else{
@@ -108,39 +108,26 @@ scb_mean <- function( Y, level=.95, method="tGKF", param_method=NULL ){
   ### Pointwise sample variances
   sd2Y = array( rep(apply( Y, 1:D, var ),N), dim = c(dimY[1:D], N) );
 
+
   ###### Estimate the quantile of the maximum of the absolute value of the limiting Gaussian process of the CLT for the mean
   if( method=="tGKF" ){
-    ### Compute the residuals to estimate the LKCs
-    R   = (Y-mY) / sqrt( sd2Y );
-    ### Estimate the LKCs
-    LKC = c(param_method$L0, param_method$LKC_estim(R));
+    ### Estimate the LKCs from the normed residuals
+    LKC = c(param_method$L0, param_method$LKC_estim( (Y-mY) / sqrt( sd2Y ) ));
     q   = GKFquantileApprox( alpha = (1-level)/2, LKC, field="t", df=N-1 );
   }else if( method=="GKF" ){
-    ### Compute the residuals to estimate the LKCs
-    R = (Y-mY) / sqrt( sd2Y );
     ### Estimate the LKCs
-    LKC = c(param_method$L0, param_method$LKC_estim(R));
+    LKC = c(param_method$L0, param_method$LKC_estim( (Y-mY) / sqrt( sd2Y ) ));
     q   = GKFquantileApprox( alpha = (1-level)/2, LKC, field="Gauss", df=1 );
-  }else if( method=="Bootstrap" ){
-    ### Compute the residuals to estimate the LKCs
-    R = Y-mY
+  }else if( method=="NonParametricBootstrap" ){
+    ### Add the level to the parameters
+    param_method$alpha = 1-level
     ### Estimate the quantile
-    q <- NonParametricBootstrap( R, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="regular" ) )$q
-  }else if( method=="Bootstrapt" ){
-    ### Compute the residuals to estimate the LKCs
-    R = Y-mY
-    ### Estimate the quantile
-    q <- NonParametricBootstrap( R, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="t" ) )$q
+    q <- NonParametricBootstrap( Y, params=param_method )$q
   }else if( method=="MultiplierBootstrap" ){
-    ### Compute the residuals to estimate the LKCs
-    R = sqrt(N / (N-1))*(Y-mY)
+    ### Add the level to the parameters
+    param_method$alpha = 1-level
     ### Estimate the quantile
-    q <- MultiplierBootstrap( R, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="regular" ) )$q
-  }else{
-    ### Compute the residuals to estimate the LKCs
-    R = sqrt(N / (N-1))*(Y-mY)
-    ### Estimate the quantile
-    q <- MultiplierBootstrap( R, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="t") )$q
+    q <- MultiplierBootstrap( sqrt(N / (N-1))*(Y-mY), params=param_method )$q
   }
 
   ###### compute the simultaneous confidence bands
@@ -154,7 +141,7 @@ scb_mean <- function( Y, level=.95, method="tGKF", param_method=NULL ){
   scb$up <- mY + q *  sqrt( sd2Y ) / sqrt( N )
 
   ### Return a list containing estimate of the mean, SCBs etc.
-  list( hatmean = mY, scb = scb, level = level, q = q, res = R  )
+  list( hatmean = mY, scb = scb, level = level, q = q  )
 }
 
 #' Computes simultaneous confidence bands for the difference of the means of two samples from one dimensional functional signal plus noise models. It is possible to choose between different estimators for the quantile.
@@ -188,7 +175,7 @@ scb_meandiff <- function( Y1, Y2, level = .95, method="tGKF", param_method=NULL 
 
   ## Check method
   if( is.character(method) ){
-    if( !(method%in%c("tGKF", "GKF", "MultiplierBootstrap", "MultiplierBootstrapt")) ){
+    if( !(method%in%c("tGKF", "GKF", "NonParametricBootstrap", "MultiplierBootstrap")) ){
       stop("Choose a valid option from the available quantile approximations. Check help page.")
     }
   }else{
@@ -219,22 +206,23 @@ scb_meandiff <- function( Y1, Y2, level = .95, method="tGKF", param_method=NULL 
               stop("The element param_method$LKC_estim must be a function computing the Lipschitz Killing curvatures from the normed residuals.")
               }
           }
-      }else if( method%in%c("MultiplierBootstrap", "MultiplierBootstrapt") ){
-            ## Check the Msim input
-            if( is.null(param_method$Msim) ){
-              param_method$Msim = 5e3
-            }else{
-              if( is.numeric(param_method$Msim) ){
-                if( param_method$Msim%%1 !=0 | param_method$Msim<=0 ){
-                  stop("The element param_method$Msim must be a positiv integer.")
-                }
-              }else{
-                stop("The element param_method$Msim must be a positiv integer.")
-              }
-            }
-      }else{
-          stop("'param_method' must be a list containing the elements specified in the help page or NULL, if you want to use the standard options of the method.")
       }
+      ## Check input for methods "onParametricBootstrap" and "MultiplierBootstrap" and put the default values, if necessary.
+      if( method%in%c("NonParametricBootstrap", "MultiplierBootstrap") ){
+          if( is.null(param_method$Mboots) ){
+            param_method$Mboots = 5e3
+          }else{
+            if( is.numeric(param_method$Mboots) ){
+              if( param_method$Mboots%%1 !=0 | param_method$Mboots < 1  ){
+                stop("The element param_method$Mboots must be a positiv integer.")
+              }
+            }else{
+              stop("The element param_method$Mboots must be a positiv integer.")
+            }
+          }
+      }
+  }else{
+      stop("'param_method' must be a list containing the elements specified in the help page or NULL, if you want to use the standard options of the method.")
   }
 
   ###### Get constants from the input
@@ -255,7 +243,6 @@ scb_meandiff <- function( Y1, Y2, level = .95, method="tGKF", param_method=NULL 
   ### Pointwise sample variances
   sd2Y1 = apply( Y1, 1:D, var );
   sd2Y2 = apply( Y2, 1:D, var );
-
   ###### Compute the residuals to estimate the LKCs
   R1 = (Y1 - mY1) / sqrt( (1+c)*array( rep(sd2Y1,N1), dim = c(dimY1[1:D], N1) ) + (1+c^{-1})*array( rep(sd2Y2,N1), dim = c(dimY1[1:D], N1) ) ) * sqrt(1+c);
   R2 = (Y2 - mY2) / sqrt( (1+c)*array( rep(sd2Y1,N2), dim = c(dimY1[1:D], N2) ) + (1+c^{-1})*array( rep(sd2Y2,N2), dim = c(dimY1[1:D], N2) ) ) * sqrt(1+c^{-1});
@@ -270,17 +257,10 @@ scb_meandiff <- function( Y1, Y2, level = .95, method="tGKF", param_method=NULL 
     LKC = c(param_method$L0, param_method$LKC_estim( abind::abind(R1, R2, along=D+1), c(N1,N1+N2) ));
     q   = GKFquantileApprox( alpha = (1-level)/2, LKC, field="Gauss", df=1 );
   }else if( method=="MultiplierBootstrap" ){
-    ### Modify the residuals
-    R1 = sqrt(N1 / (N1-1))*R1
-    R2 = sqrt(N2 / (N2-1))*R2
     ### Estimate the quantile
-    q <- MultiplierBootstrap( R1-R2, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="regular" ) )$q
+    q <- MultiplierBootstrap( sqrt(N1 / (N1-1))*(Y1 - mY1), sqrt(N2 / (N2-1))*(Y2 - mY2), params=list( Mboots = param_method$Mboots, alpha = 1-level, method= param_method$method ) )$q
   }else{
-    ### Modify the residuals
-    R1 = sqrt(N1 / (N1-1))*R1
-    R2 = sqrt(N2 / (N2-1))*R2
-    ### Estimate the quantile
-    q <- MultiplierBootstrap( R1-R2, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="t" ) )$q
+
   }
 
   ###### compute the simultaneous confidence bands
@@ -371,7 +351,7 @@ SCBglm <- function( x=seq(0,1,length.out=100), y, X=NULL, c=c(1,-1), xlim=c(0,1)
 #'
 #' @param Y Array of dimension K_1 x ... x K_d x N containing N-realizations of a Gaussian random field over a d-dimensional domain.
 #' @param level Numeric the targeted covering probability. Must be strictly between 0 and 1.
-#' @param method String specifying the method to construct the scb, i.e. estimatate the quantile. Current options are "tGKF", "GKF", "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt". Default value is "tGKF".
+#' @param method String specifying the method to construct the scb, i.e. estimate the quantile. Current options are "tGKF", "GKF", "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt". Default value is "tGKF".
 #' @param param_method list containing the parameters for 'method'. The list must contain the following elements, otherwise default values are set:
 #'  \itemize{
 #'   \item For method either "tGKF" or "GKF": L0 (integer) the Euler characteristic of the domain of the random fields Y [default is 1], LKC_estim (function) a function estimating the Lipschitz-Killing curvatures from the normalized residuals [default is LKC_estim_direct].
@@ -387,7 +367,7 @@ SCBglm <- function( x=seq(0,1,length.out=100), y, X=NULL, c=c(1,-1), xlim=c(0,1)
 #'   \item res residual field
 #' }
 #' @export
-scb_SNR <- function( Y, level=.95, method="GKF", param_method=NULL ){
+scb_SNR <- function( Y, level=.95, method="GKF", param_method=NULL, residualsType="delta" ){
   ###### Check user input
   ### Check input Y
   if(!is.array(Y)){
@@ -403,7 +383,7 @@ scb_SNR <- function( Y, level=.95, method="GKF", param_method=NULL ){
 
   ### Check input method
   if( is.character(method) ){
-    if( !(method%in%c("tGKF", "GKF", "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt")) ){
+    if( !(method%in%c("tGKF", "GKF", "NonParametricBootstrap", "MultiplierBootstrap")) ){
       stop("Choose a valid option from the available quantile approximations. Please, check the help page.")
     }
   }else{stop("Choose a valid option from the available quantile approximations. Please, check the help page.")}
@@ -434,7 +414,7 @@ scb_SNR <- function( Y, level=.95, method="GKF", param_method=NULL ){
       }
     }
     ## Check input for methods "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt" and put the default values, if necessary.
-    if( method%in%c("Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt") ){
+    if( method%in%c("NonParametricBootstrap", "MultiplierBootstrap") ){
       if( is.null(param_method$Mboots) ){
         param_method$Mboots = 5e3
       }else{
@@ -458,41 +438,51 @@ scb_SNR <- function( Y, level=.95, method="GKF", param_method=NULL ){
   ### get number of sample curves
   N    = dimY[length(dimY)]
 
+
   ###### Compute the SNR residuals and necessary statistics from the data
   R = residualsSNR(Y, bias=TRUE);
+
+  if( residualsType=="standard" ){
+    mY    = array( rep(apply( Y, 1:D, mean ),N), dim = c(dimY[1:D], N) );
+    ### Pointwise sample variances
+    sd2Y  = array( rep(apply( Y, 1:D, var ),N), dim = c(dimY[1:D], N) );
+    R$res = (Y-mY)
+  }
+
 
   ###### Estimate the quantile of the maximum of the absolute value of the limiting Gaussian process of the CLT for the mean
   if( method=="tGKF" ){
     ### Estimate the LKCs
-    LKC = c(param_method$L0, param_method$LKC_estim(R$res));
+    LKC = c(param_method$L0, param_method$LKC_estim( R$res/sqrt(matrixStats::rowVars(R$res)) ) );
     q   = GKFquantileApprox( alpha = (1-level)/2, LKC, field="t", df=N-1 );
   }else if( method=="GKF" ){
     ### Estimate the LKCs
-    LKC = c(param_method$L0, param_method$LKC_estim(R$res));
+    LKC = c(param_method$L0, param_method$LKC_estim( R$res/sqrt(matrixStats::rowVars(R$res)) ) );
     q   = GKFquantileApprox( alpha = (1-level)/2, LKC, field="Gauss", df=1 );
-  }else if( method=="Bootstrap" ){
-    # Compute the modified residuals with asymptotically the correct distribution to estimate the LKCs
-    R = ( (Y-mY)/sdY - mY/(2*sdY)*(((Y-mY)/sdY)^2-1) );
+  }else if( method=="NonParametricBootstrap" ){
     ### Estimate the quantile
-    q <- NonParametricBootstrap( R, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="regular" ) )$q
+    q <- NonParametricBootstrap( R$res, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="regular", stat="SNR" ) )$q
   }else if( method=="Bootstrapt" ){
     ### Compute the residuals to estimate the LKCs
-    # Compute the modified residuals with asymptotically the correct distribution to estimate the LKCs
-    R = ( (Y-mY)/sdY - mY/(2*sdY)*(((Y-mY)/sdY)^2-1) );
     ### Estimate the quantile
-    q <- NonParametricBootstrap( R, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="t" ) )$q
+    q <- NonParametricBootstrap( R$res, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="t", stat="SNR" ) )$q
   }else if( method=="MultiplierBootstrap" ){
     ### Estimate the quantile
-    q <- MultiplierBootstrap( R$res, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="regular" ) )$q
+    q <- MultiplierBootstrap( R$res/sqrt(matrixStats::rowVars(R$res)), params=list( Mboots = param_method$Mboots, alpha = 1-level, method="regular" ) )$q
   }else{
     ### Estimate the quantile
     q <- MultiplierBootstrap( R$res, params=list( Mboots = param_method$Mboots, alpha = 1-level, method="t") )$q
   }
 
   ### Compute the SCBs upper and lower bounds
+  if(N>250){
+    biasfac = 1
+  }else{
+    biasfac = gamma( (N-1)/2) / gamma((N-2)/2)*sqrt(2/(N-1))
+  }
   scb    <- list()
-  scb$lo <- R$SNR - q *  R$asymptsd / sqrt( N )
-  scb$up <- R$SNR + q *  R$asymptsd / sqrt( N )
+  scb$lo <- R$SNR*biasfac - q * R$asymptsd / sqrt( N )
+  scb$up <- R$SNR*biasfac + q * R$asymptsd / sqrt( N )
 
   ### Return a list containing estimate of the mean, SCBs etc.
   list( hatnu = R$SNR, scb = scb, level = level, q = q, res=R$res )

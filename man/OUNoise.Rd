@@ -4,8 +4,8 @@
 \alias{OUNoise}
 \title{Creates sample paths from a 1D Ornstein Uhlenbeck process.}
 \usage{
-OUNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x) {     1 },
-  alphaOU = 5, sigmaOU = sqrt(10), gamma = NULL)
+OUNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x) {     1
+  }, alphaOU = 5, sigmaOU = sqrt(10), gamma = NULL)
 }
 \arguments{
 \item{N}{Integer amount of realisations of the random field to be generated.}

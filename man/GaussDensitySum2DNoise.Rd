@@ -5,9 +5,9 @@
 \title{Creates a sample from an 2D random field, which is the sum of 2-D Gaussian densities..}
 \usage{
 GaussDensitySum2DNoise(N, x = seq(0, 1, length.out = 50),
-  sigma = function(x) array(outer(x, x, FUN = function(s, t) (s + 1)/(t^2 +
-  1))/3, c(rep(length(x), 2), 1)), randNumber = rnorm, M = 6, bdx = 0.02,
-  Fnorm = NULL)
+  sigma = function(x) array(outer(x, x, FUN = function(s, t) (s + 1)/(t^2
+  + 1))/3, c(rep(length(x), 2), 1)), randNumber = rnorm, M = 6,
+  bdx = 0.02, Fnorm = NULL)
 }
 \arguments{
 \item{N}{Integer amount of realisations of the random field to be generated.}

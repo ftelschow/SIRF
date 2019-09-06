@@ -147,6 +147,21 @@ ArbCovNoise <- function( N, x = seq(0,1,length.out=100), sigma = function(x){ 1 
   Y = t(mvtnorm::rmvnorm( N, mean=rep(0,length(x)), sigma=outer( x, x, FUN = CovFun ) ))* sigma(x)
 }
 
+#'Creates sample paths from a 1D random field having an arbitrary covariance function. The standard is given by the square exponential function: C(h)=exp( -h^2/(4*nu^2) )
+#' @param N Integer amount of realisations of the random field to be generated.
+#' @param x Vector locations at which the random field is evaluated.
+#' @param sigma Function computing the pointwise variance of the field. Default value is unit variance everywhere.
+#' @param CovFun Function taking to arguments, which computes the desired covariance.
+#' @return Matrix containing the realisations of the random field as columns. The rows are the locations.
+#'
+#' @export
+SquaredExp1DNoise <- function( N, x = seq(0,1,length.out=100), sigma = function(x){ 1 }, nu = 0.05  ){
+
+  CovFun = function(x,y){ exp( -(x-y)^2/2/nu^2 ) }
+
+  Y = t(mvtnorm::rmvnorm( N, mean=rep(0,length(x)), sigma=outer( x, x, FUN = CovFun ) ))* sigma(x)
+}
+
 #'Creates a sample from an Gaussian isotropic 2D random field having a square exponential function: C(h)=exp( -h^2/(4*nu^2) ) as covariance structure by smoothing independent noise with a Gaussian kernel.
 #' @param N Integer amount of realisations of the random field to be generated.
 #' @param x Vector locations at which the random field is evaluated.

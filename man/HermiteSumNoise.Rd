@@ -4,8 +4,8 @@
 \alias{HermiteSumNoise}
 \title{Creates sample paths from a 1D random field generated as a random sum of the first five Hermite polynomials.}
 \usage{
-HermiteSumNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x) {   
-   1 }, randNumber = rnorm)
+HermiteSumNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x)
+  {     1 }, randNumber = rnorm)
 }
 \arguments{
 \item{N}{Integer amount of realisations of the random field to be generated.}

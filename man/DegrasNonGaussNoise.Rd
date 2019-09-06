@@ -4,8 +4,8 @@
 \alias{DegrasNonGaussNoise}
 \title{Creates sample paths from a 1D non Gaussian field as used in Degras (2011, Simultaneous confidence bands for nonparametric regression with functional data. Statistica Sinica, 1735-1765.).}
 \usage{
-DegrasNonGaussNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x)
-  {     1 })
+DegrasNonGaussNoise(N, x = seq(0, 1, length.out = 100),
+  sigma = function(x) {     1 })
 }
 \arguments{
 \item{N}{Integer amount of realisations of the random field to be generated.}

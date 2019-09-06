@@ -12,72 +12,128 @@ library(nortest)
 require(fields)
 rm(list=ls())
 
-setwd("/media/sf_Linux/Research/Projects/2017_GKFinFDA")
+setwd("/home/drtea/Research/Projects/2017_GKFinFDA")
 
 ########################## Load data ###########################################
-data       <- readMat("Data/afq_fa.mat")
+data       <- R.matlab::readMat("Data/afq_fa.mat")
 DTIdata    <- data$fa
 fiberNames <- unlist(data$fgnames)
 rm(data)
 
 ########################## Visualize data ######################################
-level  = 0.95
-Nbw    = 200
-xeval  = seq(0,100, length.out=300)
+level  = 0.85
+Nbw    = 201
+xeval  = seq(0,100, length.out=200)
 x      = seq(0,100, length.out=100)
-bw     = 100*seq( 0.015, 0.1, length.out=Nbw )
+bwScale = "linear"
+if(bwScale=="linear"){
+  bw       = 100*seq( .02, 0.1,length.out=Nbw )
+  pdfname <- paste( "Drafts/Pics/", 100*level, "DTIdataVisualequi.pdf", sep="" )
+}else{
+  bw       = 100*exp( seq( log(.02), log(0.1),length.out=Nbw ) )
+  pdfname <- paste( "Drafts/Pics/", 100*level, "DTIdataVisual.pdf", sep="" )
+}
+bwlabels = round(bw[seq(1,Nbw, by=40)],1)
+bwat     = seq(0,1,length.out=Nbw)[seq(1,Nbw, by=40)]
 
-# pdfname <- paste( "Pics/", 100*level, "DTIdataVisual.pdf", sep="" )
-# pdf(pdfname,  width=15, height=25)
-# par(mfrow=c(7,4))
-# par(mar=c(2.1,5.1,3.1,2.1) )
-# for(k in 1:28){
-#   #### Remove NA measurements
-#   y1 <- NULL
-#   y2 <- NULL
-#
-#   for(n in 1:15){
-#     if(all(!is.na(DTIdata[, n,k]))){
-#       y1 <- cbind(y1, DTIdata[, n,k])
-#     }
-#     if(all(!is.na(DTIdata[, n+15,k]))){
-#       y2 <- cbind(y2, DTIdata[, n+15,k])
-#     }
-#   }
-#
-#   #### Plot the data with SCBs
-#   plot( NULL,
-#         xlim = c(min(x),max(x)),
-#         ylim = c(0,1),
-#         xlab = "location",
-#         main = k,
-#         ylab = fiberNames[k]
-#   )
-#   ## draw data
-#   matlines( x, y1, lty=1, col="lightblue" )
-#   matlines( x, y2, lty=1, col="pink" )
-#   legend("topleft",
-#          legend = c("control","patient"),
-#          lty=c(1,1),
-#          col= c("lightblue", "pink"), bty="n",
-#          cex=1.3,
-#          yjust=1,
-#          xjust=0.5
-#   )
-#   ## calculate SCB & draw
-#   SCB.control <- scb_mean( y1, level=level, method="tGKF", param_method=NULL )
-#   SCB.patient <- scb_mean( y2, level=level, method="tGKF", param_method=NULL )
-#   SCB2.control <- scb_mean( y1, level=level, method="Bootstrapt", param_method=NULL )
-#   SCB2.patient <- scb_mean( y2, level=level, method="Bootstrapt", param_method=NULL )
-#
-#   matlines( x, SCB.control$hatmean, col="blue" )
-#   matlines( x, cbind(SCB.control$scb$lo, SCB.control$scb$up), col="blue", lty=2 )
-#   matlines( x, cbind(SCB2.control$scb$lo, SCB2.control$scb$up), col="blue", lty=2 )
-#   matlines( x, SCB.patient$hatmean, col="red" )
-#   matlines( x, cbind(SCB.patient$scb$lo, SCB.patient$scb$up), col="red", lty=2 )
-#   matlines( x, cbind(SCB2.patient$scb$lo, SCB2.patient$scb$up), col="orange", lty=2 )
-# }
-# dev.off()
+
+SmoothWeights = array( NA, dim=c(length(xeval), length(x), Nbw) )
+for( j in 1:Nbw ){
+  #### Compute weights for local linear regression
+  SmoothWeights[,,j]   <- as.matrix( locpol::locLinWeightsC( x = x, xeval = xeval, bw = bw[j], kernel = locpol::gaussK )$locWeig )
+}
+
+
+pdf(pdfname,  width=15, height=20)
+par(mfrow=c(4,3))
+par(mar=c(2.1,5.1,3.1,2.1) )
+for(k in 1:28){
+  #### Remove NA measurements
+  y1 <- NULL
+  y2 <- NULL
+
+  for(n in 1:15){
+    if(all(!is.na(DTIdata[, n,k]))){
+      y1 <- cbind(y1, DTIdata[, n,k])
+    }
+    if(all(!is.na(DTIdata[, n+15,k]))){
+      y2 <- cbind(y2, DTIdata[, n+15,k])
+    }
+  }
+
+  #### Plot the data with SCBs
+  plot( NULL,
+        xlim = c(min(x),max(x)),
+        ylim = c(0,1),
+        xlab = "location",
+        main = fiberNames[k],
+        ylab = "FA"
+  )
+  ## draw data
+  matlines( x, y1, lty=1, col="lightblue" )
+  matlines( x, y2, lty=1, col="pink" )
+  legend("topleft",
+         legend = c("control","patient"),
+         lty=c(1,1),
+         col= c("lightblue", "pink"), bty="n",
+         cex=1.3,
+         yjust=1,
+         xjust=0.5
+  )
+  ## calculate SCB & draw
+  SCB.control <- scb_mean( y1, level=level, method="tGKF", param_method=NULL )
+  SCB.patient <- scb_mean( y2, level=level, method="tGKF", param_method=NULL )
+  SCB2.control <- scb_mean( y1, level=level, method="NonParametricBootstrap", param_method=NULL )
+  SCB2.patient <- scb_mean( y2, level=level, method="NonParametricBootstrap", param_method=NULL )
+
+  matlines( x, SCB.control$hatmean, col="blue" )
+  matlines( x, cbind(SCB.control$scb$lo, SCB.control$scb$up), col="blue", lty=2 )
+  matlines( x, cbind(SCB2.control$scb$lo, SCB2.control$scb$up), col="cyan3", lty=2 )
+  matlines( x, SCB.patient$hatmean, col="red" )
+  matlines( x, cbind(SCB.patient$scb$lo, SCB.patient$scb$up), col="red", lty=2 )
+  matlines( x, cbind(SCB2.patient$scb$lo, SCB2.patient$scb$up), col="orange", lty=2 )
+
+  ## Plot and compute confidence bands of the difference
+  scb_tGKF   = scb_meandiff( Y1=y1, Y2=y2, level = level, method="tGKF" )
+  scb_mboot  = scb_meandiff( Y1=y1, Y2=y2, level = level, method="MultiplierBootstrap" )
+
+  plot( NULL,
+        xlim = c(min(x),max(x)),
+        ylim =  c(-0.2,0.2),
+        xlab = "Location",
+        ylab = "FA",
+        main = fiberNames[k],
+        cex.lab = 1.3,
+        cex.axis= 1.3
+  )
+  abline(h = 0, col=1)
+  lines( x, scb_tGKF$hatmean, lty=1, lwd=1.5, col="grey3")
+  lines( x, scb_tGKF$scb$lo, lty=2, lwd=1.5, col="red" )
+  lines( x, scb_tGKF$scb$up, lty=2, lwd=1.5, col="red" )
+
+  ## Scale Space
+  sm.y1 = scaleField(Y=y1, x=x, xeval=xeval, h=bw, Weights = SmoothWeights)
+  sm.y2 = scaleField(Y=y2, x=x, xeval=xeval, h=bw, Weights = SmoothWeights)
+  scalebds <- scb_meandiff( Y1 = sm.y1, Y2 = sm.y2, level = level, method="tGKF" )
+
+  # test
+  Test.results <- 1*( ( (scalebds$scb$lo<0) & (scalebds$scb$up>0) ) )
+  # Plotting the confidence bands
+  image(Test.results, xlab = "Location", ylab = "Bandwidth", axes=F, col=terrain.colors(100), cex.lab=1.3 )
+  axis(1,  at=seq(0,1,length.out=5), labels=seq(0,100, length.out=5), cex.axis=1.3 )
+  axis(2,  at=bwat, labels=bwlabels, cex.axis=1.3 )
+  legend("topleft",
+         legend = c("Reject"),
+         lty=2, lwd = 1,
+         col= "#00A600FF", bty="n",
+         cex=1.3,
+         yjust=1,
+         xjust=0.5
+  )
+
+}
+dev.off()
+
 # ########################### Q-Q-Plot ###########################
 # AD.pvals <- array(NA, dim=c(28,10,3))
 #

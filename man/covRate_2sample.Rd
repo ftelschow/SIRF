@@ -4,13 +4,13 @@
 \alias{covRate_2sample}
 \title{Computing the covering rate of a given method for constructing simultaneous confidance bands for the mean for a given error process.}
 \usage{
-covRate_2sample(trials, N1 = 10, N2 = 10, level = 0.95, x = seq(0, 1,
-  length.out = 100), mu1 = function(x) {     sin(8 * pi * x) * exp(-3 * x) },
-  mu2 = function(x) {     sin(8 * pi * x) * exp(-3 * x) },
+covRate_2sample(trials, N1 = 10, N2 = 10, level = 0.95, x = seq(0,
+  1, length.out = 100), mu1 = function(x) {     sin(8 * pi * x) * exp(-3
+  * x) }, mu2 = function(x) {     sin(8 * pi * x) * exp(-3 * x) },
   noise1 = BernsteinSumNoise, noise2 = BernsteinSumNoise,
-  sigma1 = function(x) {     ((0.6 - x)^2 + 1)/6 }, sigma2 = function(x) {  
-    ((0.6 - x)^2 + 1)/6 }, sd_ObsNoise1 = 0, sd_ObsNoise2 = 0,
-  method = "tGKF", param_method = NULL, ...)
+  sigma1 = function(x) {     ((0.6 - x)^2 + 1)/6 },
+  sigma2 = function(x) {     ((0.6 - x)^2 + 1)/6 }, sd_ObsNoise1 = 0,
+  sd_ObsNoise2 = 0, method = "tGKF", param_method = NULL, ...)
 }
 \arguments{
 \item{trials}{Integer amount of trials to obtain the covering rate.}

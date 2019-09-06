@@ -4,8 +4,8 @@
 \alias{SinCosSumNoise}
 \title{Creates sample paths from a 1D Gaussian fields generated as a random sum of sine and cosine functions with frequency pi/2 and standard Gaussians as coefficients.}
 \usage{
-SinCosSumNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x) {    
-  1 })
+SinCosSumNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x)
+  {     1 })
 }
 \arguments{
 \item{N}{Integer amount of realisations of the random field to be generated.}

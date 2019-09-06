@@ -4,9 +4,9 @@
 \alias{FunctionalDataSample}
 \title{Function generating a sample of a signal plus noise model in functional data.}
 \usage{
-FunctionalDataSample(N, x = seq(0, 1, length.out = 100), mu = function(x) { 
-     rep(0, length(x)) }, noise = SinCosSumNoise, sigma = function(x) {    
-  rep(1, length(x)) }, sd_ObsNoise = 0, ...)
+FunctionalDataSample(N, x = seq(0, 1, length.out = 100),
+  mu = function(x) {     rep(0, length(x)) }, noise = SinCosSumNoise,
+  sigma = function(x) {     rep(1, length(x)) }, sd_ObsNoise = 0, ...)
 }
 \arguments{
 \item{N}{Integer amount of realisations of the random field to be generated.}

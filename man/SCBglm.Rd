@@ -5,10 +5,10 @@
 \title{Computes simultaneous confidence bands for a contrast in a functional linear model. It is possible to choose between different estimators for the quantile.}
 \usage{
 SCBglm(x = seq(0, 1, length.out = 100), y, X = NULL, c = c(1, -1),
-  xlim = c(0, 1), level = 0.95, quantile.method = "tGKF", Mboots = 1000,
-  evalN = ifelse(is.vector(x), 4 * length(x), 4 * length(x[1, ])),
-  LinWeights = NULL, bw = NULL, kernel = locpol::gaussK,
-  sigma.boots = "boots", quantile = NULL)
+  xlim = c(0, 1), level = 0.95, quantile.method = "tGKF",
+  Mboots = 1000, evalN = ifelse(is.vector(x), 4 * length(x), 4 *
+  length(x[1, ])), LinWeights = NULL, bw = NULL,
+  kernel = locpol::gaussK, sigma.boots = "boots", quantile = NULL)
 }
 \arguments{
 \item{X}{Matrix (dimensions N x P. It is the design matrix of the pointwise functional linear model.)}

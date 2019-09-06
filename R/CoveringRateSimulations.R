@@ -88,11 +88,11 @@ covRate_simulation <- function(
   }
 
   # Check input method
-  if( !is.character(method) ){
-    stop("The input 'method' must be a string. Please, check the help page for available options.")
-  }else{if( !(method%in%c("tGKF", "GKF", "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt")) ){
-    stop("Choose a valid option from the available quantile approximations. Please, check the help page.")
-  }}
+  # if( !is.character(method) ){
+  #   stop("The input 'method' must be a string. Please, check the help page for available options.")
+  # }else{if( !(method%in%c("tGKF", "GKF", "NonParametricBootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt")) ){
+  #   stop("Choose a valid option from the available quantile approximations. Please, check the help page.")
+  # }}
   # Check input level
   if( !is.numeric(level) ){
     stop("The input 'level' needs to be strictly between 0 and 1.")
@@ -100,11 +100,11 @@ covRate_simulation <- function(
     stop("The input 'level' needs to be strictly between 0 and 1.")
   }}
   # Check input N
-  if( !is.numeric(N) ){
-    stop("The input 'N' needs to be a positiv natural number.")
-  }else{if( N%%1 !=0 & N<=0 ){
-    stop("The input 'N' needs to be a positiv natural number.")
-  }}
+  # if( !is.numeric(N) ){
+  #   stop("The input 'N' needs to be a positiv natural number.")
+  # }else{if( N%%1 !=0 & N<=0 ){
+  #   stop("The input 'N' needs to be a positiv natural number.")
+  # }}
   # Check input x
   if( !is.vector(x) ){
     stop("The input 'x' needs to be a vector.")
@@ -129,38 +129,74 @@ covRate_simulation <- function(
   }}
 
   ###################### Simulation of the covering rate
+  # Check whether smoothing is to be applied
+  smoothTrue = !is.null(param_scenario$SmoothWeights)
+
   ##### SpN scenario
-  if( scenario == "SpN" ){
+  if( scenario %in%  c("SpN", "SNR")  ){
     ##### Compute the mean on the sampling grid for checking whether the SCBs cover it, and initialize the covering rates
-    rate     = 0
-    if(is.null(param_scenario$SmoothWeights)){
-      K        = length(x)
+    rate           = matrix(rep(0, length(method)*length(N) ),  length(method), length(N))
+    colnames(rate) = N
+    rownames(rate) = method
+    K              = length(x)
+    if( scenario == "SpN"){
       mu.check = mu(x)
     }else{
-      K = dim(param_scenario$SmoothWeights)[1]
-      mu.check = mu(x)
+      mu.check = mu(x) / sigma(x)
+    }
+
+    if(is.vector(mu.check)){
+      D = 1
+    }else{
+      D = length(dim(mu.check))
+    }
+    ##### True model parameters for smoothed model
+    if(smoothTrue){
+      K                = dim(param_scenario$SmoothWeights)[1]
+      mu.check         = mu(x)
       musmoothed.check = as.vector(param_scenario$SmoothWeights%*%mu.check)
-      mu.check = mu(param_scenario$xeval)
-      rate_smoothed    = 0
+      mu.check         = mu(param_scenario$xeval)
+      rate_smoothed    = matrix(rep(0, length(method)*length(N) ),  length(method), length(N))
+      colnames(rate_smoothed) = N
+      rownames(rate_smoothed) = method
     }
 
     ### loop over simulations
     for( i in 1:trials ){
       ### Generate random samples
-      Y   = FunctionalDataSample( N=N, x=x, mu=mu, noise=noise, sigma=sigma, sd_ObsNoise=sd_ObsNoise,... )
-      if( !is.null(param_scenario$SmoothWeights) ){
+      Y   = FunctionalDataSample( N=max(N), x=x, mu=mu, noise=noise, sigma=sigma, sd_ObsNoise=sd_ObsNoise)#,... )
+
+      if( smoothTrue ){
         Y = param_scenario$SmoothWeights%*%Y
       }
-      ### Compute the SCBs
-      scb = scb_mean( Y, level=level, method=method, param_method=param_method )$scb
-      ### Check whether the SCB covers the true mean or respective the smoothed mean everywhere
-      if( all(scb$lo<=mu.check) & all(scb$up>=mu.check) ){
-        rate <- rate + 1
-      }
-      if(!is.null(param_scenario$SmoothWeights)){
-        if( all(scb$lo<=musmoothed.check) & all(scb$up>=musmoothed.check) ){
-          rate_smoothed <- rate_smoothed + 1
+
+      ###### Loop over the different methods
+      for(n in 1:length(N)){
+        if( D==1 ){
+          Ytmp = Y[,1:N[n]]
+        }else{
+          Ytmp = Y[,,1:N[n]]
         }
+
+        for( count_method in 1:length(method) ){
+          ### Compute the SCBs
+          if( scenario == "SpN"){
+            scb = scb_mean( Ytmp, level=level, method=method[count_method], param_method=param_method[[count_method]] )$scb
+          }else{
+            scb = scb_SNR( Ytmp, level=level, method=method[count_method], param_method=param_method[[count_method]] )$scb
+          }
+
+          ### Check whether the SCB covers the true mean or respective the smoothed mean everywhere
+          if( all(scb$lo<=mu.check) & all(scb$up>=mu.check) ){
+            rate[count_method,n] <- rate[count_method,n] + 1
+          }
+          if(!is.null(param_scenario$SmoothWeights)){
+            if( all(scb$lo<=musmoothed.check) & all(scb$up>=musmoothed.check) ){
+              rate_smoothed[count_method,n] <- rate_smoothed[count_method,n] + 1
+            }
+          }
+
+       }
       }
     }
   }
@@ -200,9 +236,9 @@ covRate_simulation <- function(
 
   #### data.frame() returning the parameters and covering rate
   if( !is.null(param_scenario$SmoothWeights) ){
-    retFrame <- data.frame( N = N, K = K, ObsNoise = sd_ObsNoise, scenario = scenario, method = method, covRate = rate/trials, covRateSmoothed = rate_smoothed/trials )
+    retFrame <- list(covRate = rate/trials, covRateSmoothed = rate_smoothed/trials )
   }else{
-    retFrame <- data.frame( N = N, K = K, ObsNoise = sd_ObsNoise, scenario = scenario, method = method, covRate = rate/trials )
+    retFrame <- rate/trials
   }
   retFrame
 }

@@ -83,31 +83,30 @@ residualsSNR <- function(Y, bias=TRUE){
   N      = dimY[length(dimY)];
 
   # Compute the factor correction for biased variance
-  factor = ifelse(bias, (N-1)/N, 1 );
   if(length(dimY)<=2){
       # Compute the sample mean and the sample variance
       mY = rowMeans(Y);
-      sd = sqrt(factor*matrixStats::rowVars(Y));
+      sd = sqrt(matrixStats::rowVars(Y));
 
       # Compute the standard residuals, the asymptotic variance and the SNR
-      R        = Y-mY;
+      R        = sqrt(N/(N-1))*(Y-mY);
       SNR      = mY/sd;
       asymptsd = sqrt( 1+SNR^2/2 );
 
       # Compute the modified residuals random variables with asymptotically the correct distribution
-      res = ( R/sd - mY/(2*sd)*((R/sd)^2-1) ) / asymptsd;
+      res = ( R/sd - mY/(2*sd)*((R/sd)^2-1) );
   }else{
       ### Pointwise sample means and Pointwise sample variances
       mY   = array( rep(apply( Y, 1:D, mean ),N), dim = c(dimY[1:D], N) );
       sdY  = array( rep(sqrt(apply( Y, 1:D, var )),N), dim = c(dimY[1:D], N) );
 
       # Compute the standard residuals and the asymptotic variance
-      R        = (Y-mY);
+      R        = sqrt(N/(N-1))*(Y-mY);
       SNR      = mY / sdY;
       asymptsd = sqrt(1+SNR^2/2 );
 
       # Compute the modified residuals with asymptotically the correct distribution to estimate the LKCs
-      res = ( R/sdY - mY/(2*sdY)*((R/sdY)^2-1) ) / asymptsd;
+      res = ( R/sdY - mY/(2*sdY)*((R/sdY)^2-1) );
   }
   return( list( SNR=SNR, res=res, asymptsd=asymptsd) )
 

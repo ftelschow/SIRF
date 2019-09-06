@@ -4,9 +4,9 @@
 \alias{GaussDensitySumNoise}
 \title{Creates sample paths from a 1D field generated as a random sum of Gaussian densities with different means and variances and random coefficients.}
 \usage{
-GaussDensitySumNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x)
-  {     rep(1, length(x)) }, randNumber = rnorm, anchorPoints = NULL,
-  anchorSd = NULL)
+GaussDensitySumNoise(N, x = seq(0, 1, length.out = 100),
+  sigma = function(x) {     rep(1, length(x)) }, randNumber = rnorm,
+  anchorPoints = NULL, anchorSd = NULL)
 }
 \arguments{
 \item{N}{Integer amount of realisations of the random field to be generated.}

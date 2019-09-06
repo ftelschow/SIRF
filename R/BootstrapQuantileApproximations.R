@@ -80,6 +80,8 @@ NonParametricBootstrap <- function(A, params=NULL){
   }
   if( is.null(params$stat) ){
     stat = "mean"
+  }else{
+    stat = params$stat
   }
   ###### Precompute useful constants
   ## dimension of input
@@ -130,50 +132,35 @@ NonParametricBootstrap <- function(A, params=NULL){
   }else if(stat=="SNR"){
     ##### Split the cases into data with 1D domain and higher dimensional domain for computation speed
     if( D==1 ){
-      ### Compute means of bootstrap realizations and of the original data.
-      bootMeans <- A %*% counter / N
-      # We put an abs here to make sure that no NaNs are produced due to machine precision error.
-      data.sigma <- sqrt(matrixStats::rowVars(A))
+      N     = dim(A)
+      meanY = rowMeans(A); sdY = sqrt(matrixStats::rowVars(A))
 
-      data.sigma <- sqrt((N / (N-1)) * abs(bootSecMoments - bootMeans^2))
+      boots.SNR = matrix(NA, N[1], Mboots)
 
+      for(m in 1:Mboots){
+        Yboots = Y[,sample(1:N[2], replace=TRUE)]
 
-      meanA     <- rowMeans(A)
-
-      ### Estimate the variance from the sample if it is unknown
-      if( method == "regular" ){
-
-      }else if( method == "t" ){
-        bootSecMoments <- A^2 %*% counter / N
-
+        boots.mean    <- rowMeans(Yboots) #[,m] <- rowMeans(Yboots)
+        boots.sd      <- sqrt(matrixStats::rowVars(Yboots))#[,m]  <- sqrt(matrixStats::rowVars(Yboots))
+        ### Estimate the variance from the sample if it is unknown
+        if( method == "regular" ){
+          boots.SNR[,m] <- sqrt(N[2])*( boots.mean/boots.sd - meanY/sdY ) / sqrt(1+meanY^2/2/sdY^2)
+        }else if( method == "t" ){
+          boots.SNR[,m] <- sqrt(N[2])*( boots.mean/boots.sd - meanY/sdY ) / sqrt(1+boots.mean^2/2/boots.sd^2)
+        }
       }
 
       ### Compute the bootstrap realisation of the maximum of the T-field approximation
-      distVec <- sqrt(N) * apply( abs((bootMeans - meanA) / data.sigma), 2, max)
+      distVec <- apply(abs(boots.SNR), 2, max )
 
     }else if( D>1 ){
-      ### Compute original sample mean and bootstrap means
-      meanA <- apply( A, 1:D, mean )
-      bootMeans = array( matrix(A, prod(dimA[-(D+1)]), N)%*%counter, dim=c(dimA[-(D+1)], Mboots) ) / N
 
-      ### Estimate the variance from the sample if it is unknown
-      if( method == "regular" ){
-        data.sigma <- array(rep( sqrt( apply( A, 1:D, var ) ), Mboots ), dim=c(dimA[-(D+1)], Mboots) )
-      }else if( method == "t" ){
-        bootSecMoments <- array( matrix(A^2, prod(dimA[-(D+1)]), N)%*%counter, dim=c(dimA[-(D+1)], Mboots) ) / N
-        # We put an abs here to make sure that no NaNs are produced due to machine precision error.
-        data.sigma <- sqrt((N / (N-1)) * abs(bootSecMoments - bootMeans^2))
-      }
-
-      ### Compute bootstrap distribution of the absolute value of the maximum
-      distVec <- sqrt(N) * apply( abs((bootMeans - array(rep(meanA, Mboots), dim=c(dimA[-(D+1)], Mboots) )) / data.sigma), D+1, max)
     }
   }
 
   ### Return list containing the bootstrap values and the estimated quantile
   return( list( z = distVec, q = quantile(distVec, 1-alpha, type=8) ) )
 }
-
 
 #' Multiplier bootstrap estimator for the quantile of the maximum of a random field. The function contains a multiplier-t version based on Telschow Schwartzmann (2018) "Simultaneous confidence bands for non-parametric regression with functional data" and a regular version based on Cherno. For large sample sizes the versions do agree, however, for small sample sizes the bootstrap-t has better covering rates, but a slightly higher variability in the estimate of the quantile than the simple version based on Cherno.
 #'
@@ -190,11 +177,15 @@ NonParametricBootstrap <- function(A, params=NULL){
 #'   \item q alpha-quantile value of z
 #' }
 #' @export
-MultiplierBootstrap <- function( R, params=NULL ){
+MultiplierBootstrap <- function( R, Q=NULL, params=NULL ){
   ###### Check user input and put default values
-  #### Check A
+  #### Check R
   if( !is.array(R) ){
-    stop("'A' must be an array.")
+    stop("'R' must be an array.")
+  }
+  #### Check Q
+  if( !(is.array(Q) | is.null(Q)) ){
+    stop("'Q' must be an array.")
   }
   #### Check params and put defaults, if missing
   ## Check Mboots
@@ -240,47 +231,137 @@ MultiplierBootstrap <- function( R, params=NULL ){
       stop("Please, specify a valid choice for 'params$method'. Options are 't' and 'regular'.")
     }
   }
-
-  ###### Precompute useful constants
-  # dimension of input
-  dimR = dim(R)
-  # number of samples
-  N    = dimR[length(dimR)]
-  D    = length(dimR)-1
-
-  ##### Simulate Gaussian multiplier weights
-  multiplier <- matrix(rnorm(N * Mboots), N, Mboots)
-
-  ##### Split the cases into data with 1D domain and higher dimensional domain for computation speed
-  if( D==1 ){
-    ##### Compute bootstrap means
-    bootMeans <- R%*%multiplier / N
-
-    ### Estimate the variance from the sample
-      if( method == "regular" ){
-        data.sigma <- sqrt(matrixStats::rowVars(R))
-      }else if( method == "t" ){
-        bootSecMoments <- R^2 %*% multiplier^2 / N
-        # We put an abs here to make sure that no NaNs are produced due to machine precision error.
-        data.sigma <- sqrt((N / (N-1)) * abs(bootSecMoments - bootMeans^2))
+  ## Check params$weights
+  if( is.null(params$weights) ){
+    weights = "rademacher"
+  }else{
+    if( is.character(params$weights) ){
+      if( !(params$weights %in% c("gauss", "rademacher", "mammen")) ){
+        stop("Please, specify a valid choice for 'params$weights'. Options are 'gauss' and 'rademacher'.")
+      }else{
+        weights = params$weights
       }
+    }else{
+      stop("Please, specify a valid choice for 'params$weights'. Options are 'gauss' and 'rademacher'.")
+    }
+  }
 
-    ### Compute bootstrap distribution of the maximum
-    distVec <- sqrt(N)*apply( abs( bootMeans/data.sigma ), 2, max)
+  ###### One sample case
+  if(is.null(Q)){
+      ###### Precompute useful constants
+      # dimension of input
+      dimR = dim(R)
+      # number of samples
+      N    = dimR[length(dimR)]
+      D    = length(dimR)-1
 
-  }else if( D>1 ){
-    ##### Compute bootstrap means
-    bootMeans = array( matrix(R, prod(dimR[-(D+1)]), N)%*%multiplier, dim=c(dimR[-(D+1)], Mboots) ) / N
+      ##### Simulate multiplier weights
+      if(weights=="gauss"){
+        multiplier <- matrix(rnorm(N * Mboots), N, Mboots)
+      }else if(weights=="rademacher"){
+        multiplier <- matrix(sample(c(-1,1), N*Mboots, replace=T), N, Mboots)
+      }else{
+        multiplier <- matrix(sqrt(5)*rbinom( N*Mboots, 1, (sqrt(5)-1)/2/sqrt(5)) + (1-sqrt(5))/2, N, Mboots)
+      }
+      ##### Split the cases into data with 1D domain and higher dimensional domain for computation speed
+      if( D==1 ){
+        ##### Compute bootstrap means
+        bootMeans <- R%*%multiplier / N
 
-    ### Estimate the variance from the sample
-    if( method == "regular" ){
-      data.sigma <- sqrt( apply( R, 1:D, var  ) )
-      distVec    <- apply( array( as.vector(abs(bootMeans)) / as.vector(data.sigma), dim=c(dimR[-(D+1)], Mboots) ), D+1, max)  * sqrt(N)
-    }else if( method == "t" ){
-      bootSecMoments <- array( matrix(R^2, prod(dimR[-(D+1)]), N)%*%multiplier^2, dim=c(dimR[-(D+1)], Mboots) ) / N
-      # We put an abs here to make sure that no NaNs are produced due to machine precision error.
-      data.sigma <- sqrt((N / (N-1)) * abs(bootSecMoments - bootMeans^2))
-      distVec    <- apply( abs(bootMeans)  / data.sigma, D+1, max)  * sqrt(N)
+        ### Estimate the variance from the sample
+          if( method == "regular" ){
+            data.sigma <- sqrt(matrixStats::rowVars(R))
+          }else if( method == "t" ){
+            bootSecMoments <- R^2 %*% multiplier^2 / N
+            # We put an abs here to make sure that no NaNs are produced due to machine precision error.
+            data.sigma <- sqrt((N / (N-1)) * abs(bootSecMoments - bootMeans^2))
+          }
+
+        ### Compute bootstrap distribution of the maximum
+        distVec <- sqrt(N)*apply( abs( bootMeans/data.sigma ), 2, max)
+
+      }else if( D>1 ){
+        ##### Compute bootstrap means
+        bootMeans = array( matrix(R, prod(dimR[-(D+1)]), N)%*%multiplier, dim=c(dimR[-(D+1)], Mboots) ) / N
+
+        ### Estimate the variance from the sample
+        if( method == "regular" ){
+          data.sigma <- sqrt( apply( R, 1:D, var  ) )
+          distVec    <- apply( array( as.vector(abs(bootMeans)) / as.vector(data.sigma), dim=c(dimR[-(D+1)], Mboots) ), D+1, max)  * sqrt(N)
+        }else if( method == "t" ){
+          bootSecMoments <- array( matrix(R^2, prod(dimR[-(D+1)]), N)%*%multiplier^2, dim=c(dimR[-(D+1)], Mboots) ) / N
+          # We put an abs here to make sure that no NaNs are produced due to machine precision error.
+          data.sigma <- sqrt((N / (N-1)) * abs(bootSecMoments - bootMeans^2))
+          distVec    <- apply( abs(bootMeans)  / data.sigma, D+1, max)  * sqrt(N)
+        }
+      }
+  }else{
+    ###### Precompute useful constants
+    # dimension of input
+    dimR = dim(R)
+    dimQ = dim(Q)
+    # number of samples
+    N    = dimR[length(dimR)]
+    M    = dimQ[length(dimQ)]
+    c    = N/M
+    D    = length(dimR)-1
+
+    ##### Simulate multiplier weights
+    if(weights=="gauss"){
+      multiplierR <- matrix(rnorm(N * Mboots), N, Mboots)
+      multiplierQ <- matrix(rnorm(M * Mboots), M, Mboots)
+    }else{
+      multiplierR <- matrix(sample(1:2, N*Mboots, replace=T)*2-3, N, Mboots)
+      multiplierQ <- matrix(sample(1:2, M*Mboots, replace=T)*2-3, M, Mboots)
+    }
+
+    ##### Split the cases into data with 1D domain and higher dimensional domain for computation speed
+    if( D==1 ){
+      ##### Compute bootstrap means
+      bootMeansR <- R%*%multiplierR / N
+      bootMeansQ <- Q%*%multiplierQ / M
+
+      ### Estimate the variance from the samples
+      if( method == "regular" ){
+        data.sigmaR <- matrixStats::rowVars(R)
+        data.sigmaQ <- matrixStats::rowVars(Q)
+      }else if( method == "t" ){
+        bootSecMoments <- R^2 %*% multiplierR^2 / N
+        data.varR      <- (N / (N-1)) * abs(bootSecMoments - bootMeansR^2)
+
+        bootSecMoments <- Q^2 %*% multiplierQ^2 / M
+        data.varQ     <- (M / (M-1)) * abs(bootSecMoments - bootMeansQ^2)
+      }
+      data.sigma  <- sqrt( (1+1/c)*data.varR + (1+c)*data.varQ )
+
+      ### Compute bootstrap distribution of the maximum
+      distVec <- sqrt(N+M)*apply( abs( (bootMeansR + bootMeansQ) /data.sigma ), 2, max)
+
+    }else if( D>1 ){
+      ##### Compute bootstrap means
+      bootMeansR = array( matrix(R, prod(dimR[-(D+1)]), N)%*%multiplierR, dim=c(dimR[-(D+1)], Mboots) ) / N
+      bootMeansQ = array( matrix(Q, prod(dimR[-(D+1)]), M)%*%multiplierQ, dim=c(dimQ[-(D+1)], Mboots) ) / M
+
+      ### Estimate the variance from the sample
+      if( method == "regular" ){
+        data.varR <- apply( R, 1:D, var  )
+        data.varQ <- apply( Q, 1:D, var  )
+        data.sigma  <- sqrt( (1+1/c)*data.varR + (1+c)*data.varQ )
+
+        distVec    <- apply( array( as.vector(abs(bootMeans)) / as.vector(data.sigma), dim=c(dimR[-(D+1)], Mboots) ), D+1, max)  * sqrt(N+M-2)
+      }else if( method == "t" ){
+        #### bootstrapped variance for R
+        bootSecMoments <- array( matrix(R^2, prod(dimR[-(D+1)]), N)%*%multiplierR^2, dim=c(dimR[-(D+1)], Mboots) ) / N
+        data.varR <- (N / (N-1)) * abs(bootSecMoments - bootMeansR^2)
+        #### bootstrapped variance for Q
+        bootSecMoments <- array( matrix(Q^2, prod(dimQ[-(D+1)]), N)%*%multiplierQ^2, dim=c(dimQ[-(D+1)], Mboots) ) / M
+        data.varQ <- (M / (M-1)) * abs(bootSecMoments - bootMeansQ^2)
+        #### bootstrapped variance of the asymptotic process
+        data.sigma  <- sqrt( (1+1/c)*data.varR + (1+c)*data.varQ )
+
+        ##### max statistic
+        distVec    <- apply( abs(bootMeansR + bootMeansQ)  / data.sigma, D+1, max)  * sqrt(N+M)
+      }
     }
   }
 

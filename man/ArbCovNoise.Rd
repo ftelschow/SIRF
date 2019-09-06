@@ -4,8 +4,8 @@
 \alias{ArbCovNoise}
 \title{Creates sample paths from a 1D random field having an arbitrary covariance function. The standard is given by the square exponential function: C(h)=exp( -h^2/(4*nu^2) )}
 \usage{
-ArbCovNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x) {     1
-  }, CovFun = function(x, y) {     exp(-(x - y)^2/4/4^2) })
+ArbCovNoise(N, x = seq(0, 1, length.out = 100), sigma = function(x) {  
+    1 }, CovFun = function(x, y) {     exp(-(x - y)^2/4/4^2) })
 }
 \arguments{
 \item{N}{Integer amount of realisations of the random field to be generated.}

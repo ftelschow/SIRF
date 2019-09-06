@@ -7,8 +7,8 @@
 covRate_simulation(trials, scenario, param_scenario = NULL, method,
   param_method = NULL, level = 0.95, N, mu = function(x) {     rep(0,
   length(x)) }, noise = GaussDensitySumNoise, sigma = function(x) {    
-  rep(1, length(x)) }, sd_ObsNoise = 0, x = seq(0, 1, length.out = 100),
-  ...)
+  rep(1, length(x)) }, sd_ObsNoise = 0, x = seq(0, 1, length.out =
+  100), ...)
 }
 \arguments{
 \item{trials}{Integer number of trials to estimate the covering rate.}

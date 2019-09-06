@@ -4,7 +4,8 @@
 \alias{scb_meandiff}
 \title{Computes simultaneous confidence bands for the difference of the means of two samples from one dimensional functional signal plus noise models. It is possible to choose between different estimators for the quantile.}
 \usage{
-scb_meandiff(Y1, Y2, level = 0.95, method = "tGKF", param_method = NULL)
+scb_meandiff(Y1, Y2, level = 0.95, method = "tGKF",
+  param_method = NULL)
 }
 \arguments{
 \item{Y1}{Array dimension K_1 x ... x K_d x N containing N-realizations of a Gaussian random field over a d-dimensional domain. This is sample 1.}

@@ -14,6 +14,7 @@ NonParametricBootstrap(A, params = NULL)
   \item Mboots Numeric the amount of bootstrap replicates. Default is 5e3.
   \item alpha Numeric the targeted upper quantile of the maxiumum of the absolute value of the random field. Default is 0.95.
   \item method String the bootstrap version. Currently the options are "t" for the bootstrap-t and "regular". Default is "t".
+  \item stat String specifying the statistic. Currently the options "mean" (default) and "SNR" are supported.
 }}
 }
 \value{
