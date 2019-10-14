@@ -4,11 +4,21 @@ Title: Simultaneous Confidence Bands for Functional Data
 Version: 0.1.0
 Author: Fabian J.E. Telschow
 Maintainer: Fabian J.E. Telschow <ftelschow@ucsd.edu>
-Description: This package computes simultaneous confidence bands for the population mean or the population signal to noise ratio of a sample of functional data on a rectangular domain in 1D or 2D.
-    It has the option to estimate the quantile with a non-parametric bootstrap or a multiplier bootstrap. The main novelty is that it also includes estimation of the quantile using the Gaussian Kinematic formula. Please consult the descriptio of a function to choose the apropriate method for your application. The default and recommanded quantile estimation is the Gaussian Kineamtic formula for t-processes.
+Description: This package computes simultaneous confidence bands for the
+    population mean or the population signal to noise ratio of a sample
+    of functional data on a rectangular domain in 1D or 2D.
+    It has the option to estimate the quantile with a non-parametric bootstrap
+    or a multiplier bootstrap. The main novelty is that it also includes
+    estimation of the quantile using the Gaussian Kinematic formula. Please
+    consult the description of a function to choose the apropriate method for
+    your application.
+    The default and recommanded quantile estimation is the Gaussian Kineamtic
+    formula for t-processes.
 License: MIT
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp (>= 0.12.14), mvtnorm, abind, locpol, spatstat
-LinkingTo: Rcpp
+Imports: abind,
+Suggests: locpol,
+    mvtnorm,
+    spatstat
 RoxygenNote: 6.1.0
