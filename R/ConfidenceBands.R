@@ -4,6 +4,7 @@
 ##                                                                                          ####
 ################################################################################################
 ## required packages:
+##   - abind
 ##
 ## included functions:
 ##   - scb_mean (tested)
@@ -12,15 +13,24 @@
 ##   - scb_SNR (tested 1D)
 ##
 ################################################################################################
-#' Computes simultaneous confidence bands for the mean of a sample from a one dimensional functional signal plus noise model. It is possible to choose between different estimators for the quantile.
+#' Computes simultaneous confidence bands for the mean of a sample from a one dimensional
+#' functional signal plus noise model. It is possible to choose between different estimators
+#' for the quantile.
 #'
-#' @param Y Array of dimension K_1 x ... x K_d x N containing N-realizations of a Gaussian random field over a d-dimensional domain.
+#' @param Y Array of dimension K_1 x ... x K_d x N containing N-realizations of a Gaussian
+#' random field over a d-dimensional domain.
 #' @param level Numeric the targeted covering probability. Must be strictly between 0 and 1.
-#' @param method String specifying the method to construt the scb, i.e. estimatate the quantile. Current options are "tGKF", "GKF", "NonparametricBootstrap", "MultiplierBootstrap". Default value is "tGKF".
-#' @param param_method list containing the parameters for 'method'. The list must contain the following elements, otherwise default values are set:
+#' @param method String specifying the method to construt the scb, i.e. estimatate the quantile.
+#' Current options are "tGKF", "GKF", "NonparametricBootstrap", "MultiplierBootstrap".
+#' Default value is "tGKF".
+#' @param param_method list containing the parameters for 'method'. The list must contain the
+#' following elements, otherwise default values are set:
 #'  \itemize{
-#'   \item For method either "tGKF" or "GKF": L0 (integer) the Euler characteristic of the domain of the random fields Y [default is 1], LKC_estim (function) a function estimating the Lipschitz-Killing curvatures from the normalized residuals [default is LKC_estim_direct].
-#'   \item For method "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt": Mboots (positiv integer) the amount of bootstrap replicates [default 5e3].
+#'   \item For method either "tGKF" or "GKF": L0 (integer) the Euler characteristic of the domain
+#'   of the random fields Y [default is 1], LKC_estim (function) a function estimating the
+#'   Lipschitz-Killing curvatures from the normalized residuals [default is LKC_estim_direct].
+#'   \item For method "Bootstrap", "Bootstrapt", "MultiplierBootstrap", "MultiplierBootstrapt":
+#'   Mboots (positiv integer) the amount of bootstrap replicates [default 5e3].
 #' }
 #'
 #' @return list with elements
@@ -48,9 +58,11 @@ scb_mean <- function( Y, level=.95, method="tGKF", param_method=NULL ){
   ### Check input method
   if( is.character(method) ){
     if( !(method%in%c("tGKF", "GKF", "NonParametricBootstrap", "MultiplierBootstrap")) ){
-      stop("Choose a valid option from the available quantile approximations. Please, check the help page.")
+      stop("Choose a valid option from the available quantile approximations.
+           Please, check the help page.")
     }
-  }else{stop("Choose a valid option from the available quantile approximations. Please, check the help page.")}
+  }else{stop("Choose a valid option from the available quantile approximations. Please,
+             check the help page.")}
 
   ### Check input param_method
   if( is.list(param_method) | is.null(param_method) ){
@@ -77,7 +89,8 @@ scb_mean <- function( Y, level=.95, method="tGKF", param_method=NULL ){
             }
           }
     }
-    ## Check input for methods "onParametricBootstrap" and "MultiplierBootstrap" and put the default values, if necessary.
+    ## Check input for methods "onParametricBootstrap" and "MultiplierBootstrap" and put
+    ## the default values, if necessary.
     if( method%in%c("NonParametricBootstrap", "MultiplierBootstrap") ){
           if( is.null(param_method$Mboots) ){
             param_method$Mboots = 5e3
@@ -109,7 +122,8 @@ scb_mean <- function( Y, level=.95, method="tGKF", param_method=NULL ){
   sd2Y = array( rep(apply( Y, 1:D, var ),N), dim = c(dimY[1:D], N) );
 
 
-  ###### Estimate the quantile of the maximum of the absolute value of the limiting Gaussian process of the CLT for the mean
+  ###### Estimate the quantile of the maximum of the absolute value of the limiting
+  ###### Gaussian process of the CLT for the mean
   if( method=="tGKF" ){
     ### Estimate the LKCs from the normed residuals
     LKC = c(param_method$L0, param_method$LKC_estim( (Y-mY) / sqrt( sd2Y ) ));
@@ -144,7 +158,9 @@ scb_mean <- function( Y, level=.95, method="tGKF", param_method=NULL ){
   list( hatmean = mY, scb = scb, level = level, q = q  )
 }
 
-#' Computes simultaneous confidence bands for the difference of the means of two samples from one dimensional functional signal plus noise models. It is possible to choose between different estimators for the quantile.
+#' Computes simultaneous confidence bands for the difference of the means of two samples
+#' from one dimensional functional signal plus noise models. It is possible to choose
+#' between different estimators for the quantile.
 #'
 #' @param Y1 Array dimension K_1 x ... x K_d x N containing N-realizations of a Gaussian random field over a d-dimensional domain. This is sample 1.
 #' @param Y2 Array dimension K_1 x ... x K_d x N containing N-realizations of a Gaussian random field over a d-dimensional domain. This is sample 2.
@@ -203,11 +219,13 @@ scb_meandiff <- function( Y1, Y2, level = .95, method="tGKF", param_method=NULL 
               param_method$LKC_estim = LKC_estim_direct
           }else{
               if( !is.function(param_method$LKC_estim) ){
-              stop("The element param_method$LKC_estim must be a function computing the Lipschitz Killing curvatures from the normed residuals.")
+              stop("The element param_method$LKC_estim must be a function computing
+                    the Lipschitz Killing curvatures from the normed residuals.")
               }
           }
       }
-      ## Check input for methods "onParametricBootstrap" and "MultiplierBootstrap" and put the default values, if necessary.
+      ## Check input for methods "onParametricBootstrap" and "MultiplierBootstrap" and put
+      ## the default values, if necessary.
       if( method%in%c("NonParametricBootstrap", "MultiplierBootstrap") ){
           if( is.null(param_method$Mboots) ){
             param_method$Mboots = 5e3
@@ -222,7 +240,8 @@ scb_meandiff <- function( Y1, Y2, level = .95, method="tGKF", param_method=NULL 
           }
       }
   }else{
-      stop("'param_method' must be a list containing the elements specified in the help page or NULL, if you want to use the standard options of the method.")
+      stop("'param_method' must be a list containing the elements specified in the help
+            page or NULL, if you want to use the standard options of the method.")
   }
 
   ###### Get constants from the input
@@ -244,8 +263,10 @@ scb_meandiff <- function( Y1, Y2, level = .95, method="tGKF", param_method=NULL 
   sd2Y1 = apply( Y1, 1:D, var );
   sd2Y2 = apply( Y2, 1:D, var );
   ###### Compute the residuals to estimate the LKCs
-  R1 = (Y1 - mY1) / sqrt( (1+c)*array( rep(sd2Y1,N1), dim = c(dimY1[1:D], N1) ) + (1+c^{-1})*array( rep(sd2Y2,N1), dim = c(dimY1[1:D], N1) ) ) * sqrt(1+c);
-  R2 = (Y2 - mY2) / sqrt( (1+c)*array( rep(sd2Y1,N2), dim = c(dimY1[1:D], N2) ) + (1+c^{-1})*array( rep(sd2Y2,N2), dim = c(dimY1[1:D], N2) ) ) * sqrt(1+c^{-1});
+  R1 = (Y1 - mY1) / sqrt( (1+c)*array( rep(sd2Y1,N1), dim = c(dimY1[1:D], N1) )
+                   + (1+c^{-1})*array( rep(sd2Y2,N1), dim = c(dimY1[1:D], N1) ) ) * sqrt(1+c);
+  R2 = (Y2 - mY2) / sqrt( (1+c)*array( rep(sd2Y1,N2), dim = c(dimY1[1:D], N2) )
+                   + (1+c^{-1})*array( rep(sd2Y2,N2), dim = c(dimY1[1:D], N2) ) ) * sqrt(1+c^{-1});
 
   ###### Estimate the quantile of the maximum of the limiting Gaussian process
   if(method=="tGKF"){
@@ -280,7 +301,8 @@ scb_meandiff <- function( Y1, Y2, level = .95, method="tGKF", param_method=NULL 
 }
 
 
-#' Computes simultaneous confidence bands for a contrast in a functional linear model. It is possible to choose between different estimators for the quantile.
+#' Computes simultaneous confidence bands for a contrast in a functional linear model.
+#' It is possible to choose between different estimators for the quantile.
 #'
 #' @param Y Array (dimension K_1 x ... x K_d x N containing N-realizations of a Gaussian random field over a d-dimensional domain.)
 #' @param X Matrix (dimensions N x P. It is the design matrix of the pointwise functional linear model.)
@@ -325,12 +347,15 @@ SCBglm <- function( x=seq(0,1,length.out=100), y, X=NULL, c=c(1,-1), xlim=c(0,1)
   hatsigma  = sqrt(matrixStats::rowVars(Residuals) * (nSamp-1)/nSamp)
 
   ### quantile estimation of maximum of t-field using GKF for t-fields
-  q.alpha      <- gaussianKinematicFormulaT( A = Residuals, nu = nSamp-length(c), alpha = 1-level, center=FALSE, normalize=TRUE )$c.alpha
+  q.alpha      <- gaussianKinematicFormulaT( A = Residuals, nu = nSamp-length(c), alpha = 1-level,
+                                             center=FALSE, normalize=TRUE )$c.alpha
 
   ### construct confidence bands
   chatbeta = as.vector(hatbeta%*%c)
 
-  scb  <- chatbeta + cbind( -q.alpha *  hatsigma*designVar * sqrt( nSamp ) / sqrt( nSamp-length(hatbeta) ), q.alpha *  hatsigma*designVar * sqrt( nSamp ) / sqrt( nSamp-length(hatbeta) ) )
+  scb  <- chatbeta + cbind( -q.alpha *  hatsigma*designVar * sqrt( nSamp )
+              / sqrt( nSamp-length(hatbeta) ), q.alpha *  hatsigma*designVar * sqrt( nSamp )
+              / sqrt( nSamp-length(hatbeta) ) )
 
   if( is.null(LinWeights) ){
     ### interpolate confidence bands and mean to get the values on output grid

@@ -244,7 +244,8 @@ covRate_simulation <- function(
 }
 
 
-#' Computing the covering rate of a given method for constructing simultaneous confidance bands for the mean for a given error process.
+#' Computing the covering rate of a given method for constructing simultaneous confidance
+#' bands for the mean for a given error process.
 #'
 #' @param trials Integer amount of trials to obtain the covering rate.
 #' @param N1 Integer sample size for sample 1.
@@ -277,8 +278,10 @@ covRate_2sample <- function(
 
   for(i in 1:trials){
     #### Generate data
-    Y1 <- FunctionalDataSample( N=N1, x=x, mu=mu1, noise=noise1, sigma=sigma1, sd_ObsNoise=sd_ObsNoise1,... ) ;
-    Y2 <- FunctionalDataSample( N=N2, x=x, mu=mu2, noise=noise2, sigma=sigma2, sd_ObsNoise=sd_ObsNoise2,... ) ;
+    Y1 <- FunctionalDataSample( N=N1, x=x, mu=mu1, noise=noise1, sigma=sigma1,
+                                sd_ObsNoise=sd_ObsNoise1,... ) ;
+    Y2 <- FunctionalDataSample( N=N2, x=x, mu=mu2, noise=noise2, sigma=sigma2,
+                                sd_ObsNoise=sd_ObsNoise2,... ) ;
 
     # #### PlotData
     # plot(NULL, xlim=c(0,1),ylim=c(min(y)-0.3, max(y)+0.3), xlab="Input", ylab="Response")

@@ -5,14 +5,19 @@
 ##                                                                                            ##
 ################################################################################################
 ## required packages:
-##
+##      - matrixStats
 ##
 ##  included functions:
-##     - NonParametricBootstrap (tested)
-##     - MultiplierBootstrap (tested)
+##      - NonParametricBootstrap (tested)
+##      - MultiplierBootstrap (tested)
 ##
 ################################################################################################
-#' Non-parametric bootstrap estimator for the quantile of the maximum of a random field. The function contains a bootstrap-t version based on Degras (2011) "Simultaneous confidence bands for non-parametric regression with functional data" and a simple non-parametric bootstrap. For large sample sizes the versions do agree, however, for small sample sizes the bootstrap-t has better covering rates, but higher variability in the estimate of the quantile than the simple non-paramtric bootstrap.
+#' Non-parametric bootstrap estimator for the quantile of the maximum of a random field.
+#' The function contains a bootstrap-t version based on Degras (2011)
+#' "Simultaneous confidence bands for non-parametric regression with functional data" and
+#' a simple non-parametric bootstrap. For large sample sizes the versions do agree, however,
+#' for small sample sizes the bootstrap-t has better covering rates, but higher variability
+#' in the estimate of the quantile than the simple non-paramtric bootstrap.
 #'
 #' @param A Array the last dimension enumerates the realizations of the random field.
 #' @param params list containing elements
@@ -83,6 +88,7 @@ NonParametricBootstrap <- function(A, params=NULL){
   }else{
     stat = params$stat
   }
+
   ###### Precompute useful constants
   ## dimension of input
   dimA = dim(A)
@@ -162,14 +168,21 @@ NonParametricBootstrap <- function(A, params=NULL){
   return( list( z = distVec, q = quantile(distVec, 1-alpha, type=8) ) )
 }
 
-#' Multiplier bootstrap estimator for the quantile of the maximum of a random field. The function contains a multiplier-t version based on Telschow Schwartzmann (2018) "Simultaneous confidence bands for non-parametric regression with functional data" and a regular version based on Cherno. For large sample sizes the versions do agree, however, for small sample sizes the bootstrap-t has better covering rates, but a slightly higher variability in the estimate of the quantile than the simple version based on Cherno.
+#' Multiplier bootstrap estimator for the quantile of the maximum of a random field. The
+#' function contains a multiplier-t version based on Telschow Schwartzmann (2019)
+#' "Simultaneous confidence bands for non-parametric regression with functional data"
+#' and a regular version based on Cherno. For large sample sizes the versions do agree,
+#' however, for small sample sizes the bootstrap-t has better covering rates, but a slightly
+#' higher variability in the estimate of the quantile than the simple version based on Cherno.
 #'
-#' @param R Array the last dimension enumerates the realizations of an residual field.
+#' @param R,Q Array the last dimension enumerates the realizations of an residual field.
 #' @param params list containing elements
 #' \itemize{
 #'   \item Mboots Numeric the amount of bootstrap replicates. Default is 5e3.
-#'   \item alpha Numeric the targeted upper quantile of the maxiumum of the absolute value of the random field. Default is 0.95.
-#'   \item method String the bootstrap version. Currently the options are "t" for the bootstrap-t and "regular". Default is "t".
+#'   \item alpha Numeric the targeted upper quantile of the maxiumum of the
+#'   absolute value of the random field. Default is 0.95.
+#'   \item method String the bootstrap version. Currently the options are "t"
+#'   for the bootstrap-t and "regular". Default is "t".
 #' }
 #' @return list with elements
 #'  \itemize{
