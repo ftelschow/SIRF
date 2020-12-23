@@ -240,7 +240,12 @@ GaussDensitySum2DNoise <- function(N, x=seq(0,1,length.out=50), sigma = function
 #'@param ... additional parameters for the 'noise' function
 #'
 #' @export
-FunctionalDataSample <- function( N, x=seq(0,1,length.out=100), mu=function(x){rep(0, length(x))}, noise=SinCosSumNoise, sigma=function(x){rep(1, length(x))}, sd_ObsNoise=0,... ){
+FunctionalDataSample <- function( N,
+                                  x = seq( 0, 1, length.out = 100 ),
+                                  mu = function(x){rep(0, length(x))},
+                                  noise = SinCosSumNoise,
+                                  sigma = function(x){rep(1, length(x))},
+                                  sd_ObsNoise = 0,... ){
   m = mu(x)
   if(is.vector(m)){
     mdim = length(x)

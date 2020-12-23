@@ -3,19 +3,29 @@
 ##      Script providing the simulations for FTAS_2018_GKFinFDA.tex                         ####
 ##                                                                                          ####
 ################################################################################################
-##
-##
-##
-##
+#### Prepare work space
+rm( list = ls() )
+# Set working directory
+WD  <- "/home/drtea/Research/Projects/2017_GKFinFDA"
+setwd( WD )
+
+path_sim  = paste( WD, "/Simulations/", sep = "" )
+path_pics = paste( WD, "/Pics/", sep = "" )
+
+#### Graphical parameters
+clab  = 1.5
+caxis = 1.5
+cmain = 2
+
 ################################################################################################
 #################################### Load required packages ####################################
 ################################################################################################
-library(xtable)
-library(SCBmeanfd)
-library(data.table)
-library(rmutil)
-library(SCBfda)
-library(fda)
+library( xtable )
+library( data.table )
+library( rmutil )
+library( SCBfda )
+library( fda )
+library(ffscb)
 
 
 ################################################################################################
@@ -25,62 +35,104 @@ library(fda)
 ## Simulations for Section 8 of Telschow Schwartzman 2018
 ##
 ################################################################################################
-rm(list=ls())
-############ Set working directory
-WD  <- "/home/drtea/Research/Projects/2017_GKFinFDA"
-setwd(WD)
-
-path_sim  = paste(WD,"/Simulations/" , sep="")
-
-############ Graphical parameters
-clab  = 1.5
-caxis = 1.5
-cmain = 2
-
-
 ################################################################################################
 ##                                                                                            ##
 ##                          Simulations and Plots Smooth Gaussian Case                        ##
 ##                                                                                            ##
 ################################################################################################
 ############ General parameters
-x           = seq( 0, 1, length.out=100 )
+x           = seq( 0, 1, length.out = 100 )
 level       = 0.95
-Msim        = 5e2
+Msim        = 5e3
+Mboots      = 5e3
 NVec        = c( 10, 20, 30, 50, 100, 150 )
 sd_ObsNoise = 0
-methodVec   = c("tGKF", "NonParametricBootstrap", "MultiplierBootstrap", "MultiplierBootstrap")
-param_method = list()
-param_method$tGKF       = list( L0=1, LKC_estim = LKC_estim_direct )
-param_method$Bootstrapt = list( Mboots=5e3 )
-param_method$gMultiplierBootstrapt = list( Mboots=5e3, weights="gauss")
-param_method$rMultiplierBootstrapt = list( Mboots=5e3, weights="rademacher")
-date        = "11_26_2018"
+methodVec   = c( "tGKF",
+                 "NonParametricBootstrap",
+                 "MultiplierBootstrap",
+                 "MultiplierBootstrap",
+                 "ffscb" )
+param_method            = list()
+param_method$tGKF       = list( L0 = 1, LKC_estim = LKC_estim_direct )
+param_method$Bootstrapt = list( Mboots = Mboots )
+param_method$gMultiplierBootstrapt = list( Mboots = Mboots, weights = "gauss" )
+param_method$rMultiplierBootstrapt = list( Mboots = Mboots, weights = "rademacher" )
+param_method$ffscb = list(  )
+
+methodVec2D    = methodVec[1:4]
+param_method2D = param_method[1:4]
+
+date        = "11_27_2020"
 
 ############ Simulations
 #### Model A
 # Model specific parameters
-mu_ModelA    = function(x){ sin(8*pi*x) * exp(-3*x) }
+mu_ModelA    = function( x ){ sin( 8 * pi * x ) * exp( -3 * x ) }
 noise_ModelA = BernsteinSumNoise
-sigma_ModelA = function(x){ ((1-x-0.4)^2+1)/6 }
+sigma_ModelA = function(x){ ( ( 1 - x - 0.4 )^2 + 1 ) / 6 }
 
 # Simulation of the covering rates
 Is <- Sys.time()
-covRate_ModelAGauss = t(covRate_simulation( Msim, scenario="SpN", method=methodVec, param_method=param_method, level=level, N=NVec, mu=mu_ModelA, noise=noise_ModelA, sigma=sigma_ModelA, sd_ObsNoise=0, x=x ))
+covRate_ModelAGauss = t( covRate_simulation( Msim,
+                                             scenario = "SpN",
+                                             method   = methodVec,
+                                             param_method = param_method,
+                                             level = level,
+                                             N     = NVec,
+                                             mu    = mu_ModelA,
+                                             noise = noise_ModelA,
+                                             sigma = sigma_ModelA,
+                                             sd_ObsNoise = 0, x = x ) )
 Ie <- Sys.time()
 # Show simulation time
-simulationTimeModelAsmoothGauss <- Ie-Is
-print(Ie-Is)
+simulationTimeModelAsmoothGauss <- Ie - Is
+print( Ie - Is )
+
+# Timing model A smooth Gauss
+# Simulation of the covering rates
+simTimesModelAsmoothGauss <- 1:length( methodVec )
+names( simTimesModelAsmoothGauss ) <- methodVec
+
+for( k in 1:length( methodVec ) ){
+  Is <- proc.time()
+  covRate_simulation( 2e1,
+                      scenario = "SpN",
+                      method   = methodVec[k],
+                      param_method = param_method[k],
+                      level = level,
+                      N     = NVec,
+                      mu    = mu_ModelA,
+                      noise = noise_ModelA,
+                      sigma = sigma_ModelA,
+                      sd_ObsNoise = 0,
+                      x     = x )
+  Ie <- proc.time()
+  # Show simulation time
+  tmp = Ie - Is
+  simTimesModelAsmoothGauss[k] <- tmp[3]
+  print( Ie - Is )
+}
+
 
 #### Model B
 # Model specific parameters
-mu_ModelB    = function(x){ sin(8*pi*x) * exp(-3*x) }
+mu_ModelB    = function( x ){ sin( 8 * pi * x ) * exp( -3 * x ) }
 noise_ModelB = GaussDensitySumNoise
-sigma_ModelB = function(x){ ((1-x-0.4)^2+1)/6 }
+sigma_ModelB = function( x ){ ( ( 1 - x - 0.4 )^2 + 1 ) / 6 }
 
 # Simulation of the covering rates
 Is <- Sys.time()
-covRate_ModelBGauss = t(covRate_simulation( Msim, scenario="SpN", method=methodVec, param_method=param_method, level=level, N=NVec, mu=mu_ModelB, noise=noise_ModelB, sigma=sigma_ModelB, sd_ObsNoise=0, x=x ))
+covRate_ModelBGauss = t( covRate_simulation( Msim,
+                                             scenario = "SpN",
+                                             method   = methodVec,
+                                             param_method = param_method,
+                                             level = level,
+                                             N     = NVec,
+                                             mu    = mu_ModelB,
+                                             noise = noise_ModelB,
+                                             sigma = sigma_ModelB,
+                                             sd_ObsNoise = 0,
+                                             x     = x ) )
 Ie <- Sys.time()
 # Show simulation time
 simulationTimeModelBsmoothGauss <- Ie-Is
@@ -88,35 +140,71 @@ print(Ie-Is)
 
 #### Model C
 # Model specific parameters
-mu_ModelC    = function(x){ 3*outer( x, x, "*") }
+mu_ModelC    = function( x ){ 3 * outer( x, x, "*" ) }
 noise_ModelC = GaussDensitySum2DNoise
-sigma_ModelC = function(x){ outer( x, x, FUN = function(s,t) (s+1)/(t^2+1) ) }
+sigma_ModelC = function( x ){
+                    outer( x, x, FUN = function( s, t ) ( s + 1 ) / ( t^2 + 1 ) )
+                }
 
 # Simulation of the covering rates
-Is <- Sys.time()
-x2d = seq(0, 1, length.out=50)
-covRate_ModelCGauss = t(covRate_simulation( Msim, scenario="SpN", method=methodVec, param_method=param_method, level=level, N=NVec[4:6], mu=mu_ModelC, noise=noise_ModelC, sigma=sigma_ModelC, sd_ObsNoise=0, x=x2d ))
-Ie <- Sys.time()
+Is <- proc.time()
+x2d = seq( 0, 1, length.out = 50)
+covRate_ModelCGauss = t( covRate_simulation( Msim,
+                                             scenario = "SpN",
+                                             method   = methodVec2D,
+                                             param_method = param_method2D,
+                                             level = level,
+                                             N     = NVec,
+                                             mu    = mu_ModelC,
+                                             noise = noise_ModelC,
+                                             sigma = sigma_ModelC,
+                                             sd_ObsNoise = 0,
+                                             x     = x2d ) )
+Ie <- proc.time()
 # Show simulation time
-simulationTimeModelCsmoothGauss <- Ie-Is
-print(Ie-Is)
+simulationTimeModelCsmoothGauss <- Ie - Is
+print( Ie - Is )
 
-#### save the simulation
-rm( k, i, Ie, Is )
-#save.image( paste(path_sim, date,"_SimulationSmoothGauss.RData") )
+# Timing model C smooth Gauss
+# Simulation of the covering rates
+  simTimesModelCsmoothGauss <- 1:length( methodVec2D )
+  names( simTimesModelCsmoothGauss ) <- methodVec2D
+
+  for( k in 1:length( methodVec2D ) ){
+    Is <- Sys.time()
+    covRate_simulation( 2e1,
+                        scenario = "SpN",
+                        method   = methodVec2D[k],
+                        param_method = param_method2D[k],
+                        level = level,
+                        N     = NVec,
+                        mu    = mu_ModelC,
+                        noise = noise_ModelC,
+                        sigma = sigma_ModelC,
+                        sd_ObsNoise = 0,
+                        x     = x )
+    Ie <- Sys.time()
+    # Show simulation time
+    simTimesModelCsmoothGauss[ k ] <- Ie - Is
+    print( Ie - Is )
+  }
+
+  #### save the simulation
+  rm( k, i, Ie, Is )
+  save.image( paste(path_sim, date,"_SimulationSmoothGauss.RData") )
 
 ############ Plot the Results and error processes
-date = "11_26_2018"
-load(paste(path_sim, date,"_SimulationSmoothGauss.RData"))
-pdfname <- "Drafts/Pics/ResultsSimulationSmoothGaussian.pdf"
-pdf(pdfname,  title=pdfname, width=1.1*10, height=1.1*7.5)
-par(mfrow=c(3,3))
+date = "11_27_2020"
+load( paste( path_sim, date, "_SimulationSmoothGauss.RData" ) )
+pdfname <- paste( path_pics, "ResultsSimulationSmoothGaussian.pdf", sep = "" )
+pdf( pdfname,  title = pdfname, width = 1.1 * 10, height = 1.1 * 7.5 )
+par( mfrow = c( 3, 3 ) )
   #### Plot Sample paths of Signal plus noise model
   set.seed(1)
   # Model A sample paths
   x = seq(0,1, length.out=100)
   y = FunctionalDataSample( N=15, x=x, mu=mu_ModelA, noise=noise_ModelA, sigma=sigma_ModelA, sd_ObsNoise=0 )
-  par(mar=c(2.1,5.1,3.1,2.1) )
+      par(mar=c(2.1,5.1,3.1,2.1) )
   plot(NULL, xlim=c(0,1), ylim=range(y), xlab="", ylab="", main="Model A", cex.main=cmain, cex.axis=caxis)
   matlines(x, y)
   lines(x, mu_ModelA(x), lwd=2)
@@ -137,30 +225,39 @@ par(mfrow=c(3,3))
 
   #### Plot sample paths of noise
   # Noise Model A plot
-  x = seq(0,1,length.out=100)
-  y = noise_ModelA( N=15, x=x )
-  par(mar=c(2.1,5.1,3.1,2.1) )
-  plot(NULL, xlim=c(0,1), ylim=range(y), xlab="", ylab="", main="Noise Model A", cex.main=cmain, cex.axis=caxis)
+  x = seq( 0, 1, length.out = 100 )
+  y = noise_ModelA( N = 15, x = x )
+  par( mar = c( 2.1, 5.1, 3.1, 2.1 ) )
+  plot( NULL, xlim = c( 0, 1 ), ylim = range( y ),
+        xlab = "", ylab = "",
+        main = "Noise Model A",
+        cex.main = cmain, cex.axis = caxis )
   matlines(x, y)
 
   # Noise Model B plot
-  x = seq(0,1,length.out=100)
-  y = noise_ModelB( N=15, x=x )
-  par(mar=c(2.1,5.1,3.1,2.1) )
-  plot(NULL, xlim=c(0,1), ylim=range(y), xlab="", ylab="", main="Noise Model B", cex.main=cmain, cex.axis=caxis)
+  x = seq( 0, 1, length.out = 100 )
+  y = noise_ModelB( N = 15, x = x )
+  par( mar = c( 2.1, 5.1, 3.1, 2.1 ) )
+  plot( NULL, xlim = c( 0, 1 ), ylim = range( y ),
+        xlab = "", ylab = "",
+        main = "Noise Model B",
+        cex.main = cmain, cex.axis = caxis )
   matlines(x, y)
 
   # Noise Model C plot
-  x = seq(0,1,length.out=50)
-  y = noise_ModelC( N=10, x=x )
-  par(mar=c(2.1,5.1,3.1,5) )
-  fields::image.plot(y[,,9], main="Noise Model C", cex.axis=caxis, cex.main=cmain)
+  x = seq( 0, 1, length.out = 50 )
+  y = noise_ModelC( N = 10, x = x )
+  par( mar = c( 2.1, 5.1, 3.1, 5 ) )
+  fields::image.plot( y[ , , 9 ],
+                      main = "Noise Model C",
+                      cex.axis = caxis,
+                      cex.main = cmain )
   # Clear Workspace
   rm(x, y)
 
   #### Plot Simulation Results
-  par(mar=c(5.1,5.1,2.1,2.1) )
-  colVec <- c("red", "darkmagenta", "cyan3","blue")
+  par( mar = c( 5.1, 5.1, 2.1, 2.1 ) )
+  colVec <- c("red", "darkmagenta", "cyan3", "blue", "orange")
   for(i in 1:3){
     if(i==1){
       cov.data = covRate_ModelAGauss
@@ -174,7 +271,7 @@ par(mfrow=c(3,3))
       model    = "C"
     }
     axisPoints = 10*(1:length(NVec))
-    plot( NULL, xlim = range(axisPoints), ylim = c(86,100), ylab="Covering Rate [%]", xlab="Number of Samples [N]", xaxt='n', cex.lab=clab, cex.axis=caxis )
+    plot( NULL, xlim = range(axisPoints), ylim = c(84,100), ylab="Covering Rate [%]", xlab="Number of Samples [N]", xaxt='n', cex.lab=clab, cex.axis=caxis )
     axis(1, at=axisPoints, labels=NVec, cex.axis=caxis)
 
     ### nominal level
@@ -185,11 +282,19 @@ par(mfrow=c(3,3))
     ### Plot the data
     Nlength = length(NVec)
     for(k in 1:Nmethods){
-      lines( axisPoints, 100*cov.data[,k], col=colVec[k], pch=k  )
-      points( axisPoints, 100*cov.data[,k], col=colVec[k], pch=k  )
+      lines(  axisPoints, 100 * cov.data[ ,k ], col = colVec[k], pch = k  )
+      points( axisPoints, 100 * cov.data[ ,k ], col = colVec[k], pch = k  )
     }
     if(i==1){
-      legend("bottomright", legend=c("Boots-t", "tGKF", "rMult-t", "gMult-t"), col=colVec[c(2,1,4,3)], pch=c(2,1,4,3), lty=rep(1,Nmethods), cex=1.5)
+      legend( "bottomright",
+              legend = c( "Boots-t",
+                          "tGKF",
+                          "rMult-t",
+                          "gMult-t",
+                          "ffscb" ),
+              col = colVec[ c( 2, 1, 4, 3, 5) ],
+              pch = c( 2, 1, 4, 3, 5),
+              lty = rep( 1, Nmethods ), cex = 1.2 )
     }
     rm(k, axisPoints, Nlength, model, cov.data)
   }
@@ -212,20 +317,29 @@ level       = 0.95
 Msim        = 5e3
 NVec        = c( 10, 20, 30, 50, 100, 150 )
 sd_ObsNoise = 0
-methodVec   = c("tGKF", "NonParametricBootstrap", "MultiplierBootstrap", "MultiplierBootstrap")
+methodVec   = c( "tGKF",
+                 "NonParametricBootstrap",
+                 "MultiplierBootstrap",
+                 "MultiplierBootstrap",
+                 "ffscb" )
 param_method = list()
 param_method$tGKF       = list( L0=1, LKC_estim = LKC_estim_direct )
 param_method$Bootstrapt = list( Mboots=5e3 )
 param_method$gMultiplierBootstrapt = list( Mboots=5e3, weights="gauss")
 param_method$rMultiplierBootstrapt = list( Mboots=5e3, weights="rademacher")
-
-date        = "11_27_2018"
+param_method$ffscb = list( )
+date        = "11_27_2020"
 
 ############ Simulations
 #### Model A
 # Model specific parameters
-mu_ModelA    = function(x){ sin(8*pi*x) * exp(-3*x) }
-noise_ModelA = function(N, x, sigma){ BernsteinSumNoise( N=N, x=x, sigma=sigma, randNumber=function(n){rt( n, df=3)/sqrt( 3/ (3-2) )} ) }
+mu_ModelA    = function(x){ sin( 8 * pi * x) * exp( -3 * x ) }
+noise_ModelA = function(N, x, sigma){
+            BernsteinSumNoise( N = N,
+            x = x,
+            sigma = sigma,
+            randNumber = function( n ){ rt( n, df = 3 ) / sqrt( 3 / ( 3 - 2 ) )
+              } ) }
 sigma_ModelA = function(x){ ((1-x-0.4)^2+1)/6 }
 
 # Simulation of the covering rates
@@ -238,8 +352,10 @@ print(Ie-Is)
 
 #### Model B
 # Model specific parameters
-mu_ModelB    = function(x){ sin(8*pi*x) * exp(-3*x) }
-noise_ModelB = function(N, x, sigma=function(x){ rep(1, length(x)) }, df){
+mu_ModelB    = function( x ){ sin( 8 * pi * x ) * exp( -3 * x ) }
+noise_ModelB = function( N,
+                         x,
+                         sigma = function(x){ rep(1, length(x)) }, df){
                           randNumber=function(n){ (rchisq(n, df=df)-df)/sqrt(2*df)}
                           GaussDensitySumNoise( N=N, x=x, sigma=sigma, randNumber=randNumber ) }
 sigma_ModelB = function(x){ ((1-x-0.4)^2+1)/6 }
@@ -295,10 +411,10 @@ rm( covRate_ModelBnonGauss_tGKF, covRate_ModelBnonGauss_boot, covRate_ModelAnonG
 ############ Plot the Results and error processes
 # date = "11_27_2018"
 # load(paste(path_sim, date,"_SimulationSmoothNonGauss.RData"))
-pdfname <- "Drafts/Pics/ResultsSimulationNonGaussModelA.pdf"
-pdf(pdfname,  title=pdfname, width=1.1*10, height=1.2*4)
-  par(mfrow=c(1,2), mar=c(4.1,5.1,2.1,2.1) )
-  Nmethods=length(param_method)
+pdfname <- paste( path_pics, "ResultsSimulationNonGaussModelA.pdf", sep = "" )
+pdf( pdfname, title = pdfname, width = 1.1 * 10, height = 1.2 * 4 )
+  par( mfrow = c( 1, 2 ), mar = c( 4.1, 5.1, 2.1, 2.1 ) )
+  Nmethods = length( param_method )
   set.seed(5)
   # Plot sample paths of noise of Model A
   x <- seq( 0, 1, length.out=100 )
@@ -333,12 +449,12 @@ pdf(pdfname,  title=pdfname, width=1.1*10, height=1.2*4)
 dev.off()
 
 ## Plot model B
-pdfname <- "Drafts/Pics/ResultsSimulationNonGaussModelB.pdf"
-pdf(pdfname,  title=pdfname, width=1.1*10, height=1.2*5)
-par(mfrow=c(2,3), mar=c(2.6,5.1,3.1,2.1) )
-    Nmethods=length(param_method)
-    axisPoints = 10*(1:Nlength)
-    set.seed(5)
+pdfname <- paste( path_pics, "ResultsSimulationNonGaussModelB.pdf", seq = "" )
+pdf( pdfname, title = pdfname, width = 1.1 * 10, height = 1.2 * 5 )
+par( mfrow = c( 2, 3 ), mar = c( 2.6, 5.1, 3.1, 2.1 ) )
+     Nmethods = length( param_method )
+     axisPoints = 10*(1:Nlength)
+     set.seed(5)
     # Plot sample paths of noise of Model B
     for( k in c(1,3,6) ){
       y <- noise_ModelB( N=15, x=x, sigma=function(x){ rep(1, length(x)) }, df=dfVec[k] )

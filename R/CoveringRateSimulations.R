@@ -40,7 +40,18 @@
 #' }
 #' @export
 covRate_simulation <- function(
-  trials, scenario, param_scenario=NULL, method, param_method=NULL, level=0.95, N, mu=function(x){ rep(0, length(x)) }, noise=GaussDensitySumNoise, sigma=function(x){rep(1, length(x))}, sd_ObsNoise=0, x=seq(0,1,length.out=100), ...
+  trials,
+  scenario,
+  param_scenario = NULL,
+  method,
+  param_method = NULL,
+  level = 0.95,
+  N,
+  mu = function(x){ rep(0, length(x)) },
+  noise = GaussDensitySumNoise,
+  sigma = function(x){ rep( 1, length( x ) ) },
+  sd_ObsNoise = 0,
+  x = seq( 0, 1, length.out = 100 ), ...
 ){
   ######## Check input
   ## trials
@@ -164,7 +175,8 @@ covRate_simulation <- function(
     ### loop over simulations
     for( i in 1:trials ){
       ### Generate random samples
-      Y   = FunctionalDataSample( N=max(N), x=x, mu=mu, noise=noise, sigma=sigma, sd_ObsNoise=sd_ObsNoise)#,... )
+      Y   = FunctionalDataSample( N = max(N), x = x, mu = mu, noise = noise,
+                                  sigma = sigma, sd_ObsNoise = sd_ObsNoise )#,... )
 
       if( smoothTrue ){
         Y = param_scenario$SmoothWeights%*%Y
@@ -172,7 +184,7 @@ covRate_simulation <- function(
 
       ###### Loop over the different methods
       for(n in 1:length(N)){
-        if( D==1 ){
+        if( D == 1 ){
           Ytmp = Y[,1:N[n]]
         }else{
           Ytmp = Y[,,1:N[n]]
@@ -180,8 +192,12 @@ covRate_simulation <- function(
 
         for( count_method in 1:length(method) ){
           ### Compute the SCBs
-          if( scenario == "SpN"){
-            scb = scb_mean( Ytmp, level=level, method=method[count_method], param_method=param_method[[count_method]] )$scb
+          if( scenario == "SpN" ){
+            scb = scb_mean( Ytmp,
+                            level = level,
+                            method = method[ count_method ],
+                            param_method = param_method[[ count_method ]]
+                            )$scb
           }else{
             scb = scb_SNR( Ytmp, level=level, method=method[count_method], param_method=param_method[[count_method]] )$scb
           }
@@ -223,8 +239,13 @@ covRate_simulation <- function(
     ##### loop over simulations
     for(i in 1:trials){
       ### Generate random samples and transform them into a scale field
-      Y   = FunctionalDataSample( N=N, x=x, mu=mu, noise=noise, sigma=sigma, sd_ObsNoise=sd_ObsNoise,... )
-      Y   = scaleField( Y, Weights=Weights )
+      Y   = FunctionalDataSample( N = N,
+                                  x = x,
+                                  mu = mu,
+                                  noise = noise,
+                                  sigma = sigma,
+                                  sd_ObsNoise = sd_ObsNoise,... )
+      Y   = scaleField( Y, Weights = Weights )
       ### Compute the SCBs
       scb = scb_mean( Y, level=level, method=method, param_method = param_method )$scb
       ### Check whether the SCB covers the true mean or respective the smoothed mean everywhere
@@ -236,9 +257,10 @@ covRate_simulation <- function(
 
   #### data.frame() returning the parameters and covering rate
   if( !is.null(param_scenario$SmoothWeights) ){
-    retFrame <- list(covRate = rate/trials, covRateSmoothed = rate_smoothed/trials )
+    retFrame <- list( covRate = rate / trials,
+                      covRateSmoothed = rate_smoothed / trials )
   }else{
-    retFrame <- rate/trials
+    retFrame <- rate / trials
   }
   retFrame
 }
@@ -278,17 +300,19 @@ covRate_2sample <- function(
 
   for(i in 1:trials){
     #### Generate data
-    Y1 <- FunctionalDataSample( N=N1, x=x, mu=mu1, noise=noise1, sigma=sigma1,
-                                sd_ObsNoise=sd_ObsNoise1,... ) ;
-    Y2 <- FunctionalDataSample( N=N2, x=x, mu=mu2, noise=noise2, sigma=sigma2,
-                                sd_ObsNoise=sd_ObsNoise2,... ) ;
+    Y1 <- FunctionalDataSample( N = N1, x = x, mu = mu1, noise = noise1,
+                                sigma = sigma1, sd_ObsNoise = sd_ObsNoise1, ... ) ;
+    Y2 <- FunctionalDataSample( N = N2, x = x, mu = mu2, noise = noise2,
+                                sigma = sigma2, sd_ObsNoise = sd_ObsNoise2, ... ) ;
 
     # #### PlotData
     # plot(NULL, xlim=c(0,1),ylim=c(min(y)-0.3, max(y)+0.3), xlab="Input", ylab="Response")
     # matlines(x,t(y), lty=1, col="lightblue")
 
     #### Confidence bands
-    scb <- scb_meandiff( Y1, Y2, level = level, method=method, param_method=param_method )$scb
+    scb <- scb_meandiff( Y1, Y2, level = level,
+                         method = method,
+                         param_method = param_method )$scb
 
     ##### Check whether truth is covered
     if( all( 0 <= (scb$up )) & all( 0 >= (scb$lo )) ){
@@ -299,5 +323,6 @@ covRate_2sample <- function(
   }
 
   #### data.frame() returning the parameters and covering rate
-  data.frame( N1 = N1, N2 = N2, K = length(x), method = method, covRate = rate/trials )
+  data.frame( N1 = N1, N2 = N2, K = length(x),
+              method = method, covRate = rate / trials )
 }

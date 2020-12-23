@@ -165,7 +165,7 @@ NonParametricBootstrap <- function(A, params=NULL){
   }
 
   ### Return list containing the bootstrap values and the estimated quantile
-  return( list( z = distVec, q = quantile(distVec, 1-alpha, type=8) ) )
+    return( list( z = distVec, q = quantile(distVec, 1-alpha, type=8) ) )
 }
 
 #' Multiplier bootstrap estimator for the quantile of the maximum of a random field. The

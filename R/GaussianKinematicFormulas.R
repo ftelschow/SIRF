@@ -67,17 +67,23 @@ GKFquantileApprox <- function( alpha = 0.05, LKC, field="t", df ){
   if( length(LKC) == 2 ){
     ### 1D case
     tailProb <- function(u){
-            LKC[1] * ECdensity( x=u, d=0, field=field, df=df ) + LKC[2] * ECdensity( x=u, d=1, field=field, df=df ) - alpha
+            LKC[1] * ECdensity( x = u, d = 0, field = field, df = df ) +
+            LKC[2] * ECdensity( x = u, d = 1, field = field, df = df ) - alpha
     }
   }else if( length(LKC) == 3 ){
     ### 2D case
     tailProb <- function(u){
-        LKC[1] * ECdensity( x=u, d=0, field=field, df=df ) + LKC[2] * ECdensity( x=u, d=1, field=field, df=df ) + LKC[3] * ECdensity( x=u, d=2, field=field, df=df ) - alpha
+        LKC[1] * ECdensity( x = u, d = 0, field = field, df = df ) +
+        LKC[2] * ECdensity( x = u, d = 1, field = field, df = df ) +
+        LKC[3] * ECdensity( x = u, d = 2, field = field, df = df ) - alpha
     }
   }else if( length(LKC) == 4 ){
-    ### 2D case
+    ### 3D case
     tailProb <- function(u){
-        LKC[1] * ECdensity( x=u, d=0, field=field, df=df ) + LKC[2] * ECdensity( x=u, d=1, field=field, df=df ) + LKC[3] * ECdensity( x=u, d=2, field=field, df=df ) + LKC[4] * ECdensity( x=u, d=3, field=field, df=df )
+        LKC[1] * ECdensity( x = u, d = 0, field = field, df = df ) +
+        LKC[2] * ECdensity( x = u, d = 1, field = field, df = df ) +
+        LKC[3] * ECdensity( x = u, d = 2, field = field, df = df ) +
+        LKC[4] * ECdensity( x = u, d = 3, field = field, df = df )
       - alpha
     }
   }else{

@@ -21,7 +21,7 @@
 #' @param subdiv Vector (containing the breakpoints to split the array in independent fields, e.g. for 2 sample tests)
 #' @return LKC Vector containing the Lipschitz killing curvatures of dimension greater than 1. Note that the 0-th LKC must be calculated seperately as the Euler characteristic of the domain.
 #' @export
-LKC_estim_direct = function( R, subdiv=dim(R)[length(dim(R))] ){
+LKC_estim_direct = function( R, subdiv=dim(R)[length(dim(R))], heavy = FALSE ){
   #### Get dimension of the domain of the data
   dimR = dim(R); N = diff(c(0,subdiv)); D = length(dimR)-1;
 
@@ -34,19 +34,42 @@ LKC_estim_direct = function( R, subdiv=dim(R)[length(dim(R))] ){
   subdiv  = c( 1, subdiv );
 
   #### Initiate the LKC vector
-  LKC = rep(NA,D) ;
+  LKC = rep( NA, D ) ;
 
   #### Switch cases depending on dimension
-  if( D==1 ){
-    VardR = rep(0, dimR[1]-1)
-    # Estimate dSigma^2 assuming independence across the subdivisions of the fields
-    for( u in 1:Nsubdiv ){
-          dtmp    = ( R[2:dimR[1], subdiv[u]:subdiv[u+1]] - R[1:(dimR[1]-1), subdiv[u]:subdiv[u+1]] )^2 ;
-          VardR   = VardR + apply( dtmp, 1, function(row) sum(row) ) / (N[u]-1) ;
+  if( D == 1 ){
+    if( heavy ){
+      dVar = apply( diff( R ), 1,
+                    function(x) fit_mvt( x )$cov )
+      LKC = sum( sqrt( dVar ) )
+    }else{
+      if( !all( subdiv == dim( R )[ length( dim( R ) ) ] ) ){
+      VardR = rep(0, dimR[1]-1)
+      # Estimate dSigma^2 assuming independence across the subdivisions of the fields
+      for( u in 1:Nsubdiv ){
+            dtmp    = ( R[2:dimR[1], subdiv[u]:subdiv[u+1]] - R[1:(dimR[1]-1), subdiv[u]:subdiv[u+1]] )^2 ;
+            VardR   = VardR + apply( dtmp, 1, function(row) sum(row) ) / (N[u]-1) ;
+      }
+      # Integrate dSigma over the domain. Note that dt cancels, since we did not divide the finite differences.
+      LKC    = sum( sqrt(VardR) ) ;
+    }else{
+      x_scl    <- t( apply( R, 1, scale ) ) # pointwise standardization (mean=0, sd=1)
+      x_scl    <- x_scl
+      x_p      <- apply( x_scl, 2,
+                         FUN = function( yy ){     # differentiation
+                           xx <- seq( 0, 1, len = length( yy ) )
+                           fn <- stats::splinefun( x = xx,
+                                                   y = yy,
+                                                   method = "natural")
+                           pracma::fderiv( f = fn,
+                                           x = xx,
+                                           n = 1,
+                                           h = diff(xx)[1],
+                                           method = "central")
+                           } )
+      tau_t    <- apply( x_p, 1, stats::sd )           # pointwise sd
     }
-    # Integrate dSigma over the domain. Note that dt cancels, since we did not divide the finite differences.
-    LKC    = sum( sqrt(VardR) ) ;
-
+    }
   }else if( D==2 ){
     # Compute length of horizontal/vertical/diagonal edges, the
     # triangulation of the rectangle is given by the following pattern for
@@ -175,4 +198,97 @@ EulerChar <- function( f, u, connectivity=8 ){
     }
   }
   return( EC )
+}
+
+#' Computes the LKCs of the boundary of a domain.
+#'
+#' @param x x-Coordinates of the grid on which the data is observed.
+#' @param y y-Coordinates of the grid on which the data is observed.
+#' @param cont The contour of f at value level
+#' @param R An array of dimension c(length(x),length(y),n) containing the
+#'          realizations of the field.
+#' @importFrom stats na.omit pnorm
+#' @return A function g that computes for u>0 the probility that the supremum of
+#'         the field exceeds u.
+LKCcontDomain = function( x, y, bdry, R, h = 0.01 ){
+
+  # Number of contour elements
+  nCont <- length(bdry$bdry)
+  cont  <- bdry$bdry
+  if( nCont == 0) return( function(u) return(0) )
+
+  # number of samples
+  nn = dim(R)[3]
+
+  #---- Compute the contour line integrals
+  SC = vector( "list", nCont )
+
+  # interpolate the residuals to the contour line
+  for( i in 1:nCont ){
+    for( j in 1:nn ){
+      if( j == 1 ){
+        SC[[i]] = fields::interp.surface(
+                      list( x = x, y = y, z = R[,,j] ),
+                      cbind( cont[[i]]$x, cont[[i]]$y )
+                      )
+      }else{
+        SC[[i]] = cbind( SC[[i]], fields::interp.surface(
+                          list( x = x, y = y, z = R[,,j] ),
+                                cbind( cont[[i]]$x, cont[[i]]$y ) ) )
+      }
+    }
+  }
+  # clean up NAs due to extrapolation
+#  SC = sapply( SC, na.omit )
+
+  #Gives the length of one component.
+  L1 = function( X ){
+    if( !is.matrix( X ) ) return( 0 ) # Pathological cases.
+    if( nrow(X) == 1 ) return( 0 )
+    X = X / sqrt( rowSums( X^2 ) )
+    sum( sqrt( rowSums( diff(X)^2 ) ) )
+  }
+
+  # sums the length of all components wrt the Riemannian metric
+  L1 = sum( sapply( SC, L1 ) )
+
+
+  ##---- Compute L2
+  volform <- function( ss ){
+    N = dim( R )[3]
+    normR = R / sqrt( rowSums( R^2 ) / ( N - 1 )  )
+    dRx <- dRy <- matrix( NaN, dim(ss)[1], N )
+    for( j in 1:N ){
+      dRx[,j] <- ( fields::interp.surface(
+                        list( x = x, y = y, z = normR[,,j] ),
+                        cbind( ss[,1] + h, ss[,2] )
+                      ) -
+                   fields::interp.surface(
+                      list( x = x, y = y, z = normR[,,j] ),
+                      cbind( ss[,1] - h, ss[,2] )
+                   ) ) / 2 / h
+
+      dRy[,j] <- ( fields::interp.surface(
+                      list( x = x, y = y, z = R[,,j] ),
+                      cbind( ss[,1], ss[,2] + h )
+                    ) -
+                    fields::interp.surface(
+                      list( x = x, y = y, z = R[,,j] ),
+                      cbind( ss[,1], ss[,2] - h )
+                    ) ) / 2 / h
+    }
+
+    sqrt( rowSums( dRx^2 ) * rowSums( dRy^2 ) - rowSums( dRx*dRy )^2 ) / ( N-1 )
+
+  }
+
+  volumes <- NaN * ( 1:nCont )
+  for ( i in 1:nCont ) {
+
+    volumes[i] <- polyCub.midpoint( bdry, f = volform, plot = TRUE )
+  }
+
+ L2 = sum( volumes )
+
+  c( L1 = L1, L2 = L2 )
 }

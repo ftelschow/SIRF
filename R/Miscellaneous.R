@@ -8,6 +8,8 @@
 ## included functions:
 ##   - scaleField
 ##   - SNRresiduals
+##   - SkewResiduals
+##   - KurtResiduals
 ##
 ################################################################################################
 #' Computes the scale field for a sample of 1d functional data
@@ -86,12 +88,18 @@ residualsSNR <- function(Y, bias=TRUE){
   if(length(dimY)<=2){
       # Compute the sample mean and the sample variance
       mY = rowMeans(Y);
-      sd = sqrt(matrixStats::rowVars(Y));
+      sd = sqrt((N-1)/N*matrixStats::rowVars(Y));
 
       # Compute the standard residuals, the asymptotic variance and the SNR
-      R        = sqrt(N/(N-1))*(Y-mY);
+      R        = (Y-mY);
       SNR      = mY/sd;
-      asymptsd = sqrt( 1+SNR^2/2 );
+      if(N>250){
+        biasfac = 1
+      }else{
+        biasfac = gamma( (N-1)/2) / gamma((N-2)/2)*sqrt(2/(N-1))
+      }
+
+      asymptsd = sqrt( 1+biasfac^2*SNR^2/2 );
 
       # Compute the modified residuals random variables with asymptotically the correct distribution
       res = ( R/sd - mY/(2*sd)*((R/sd)^2-1) );
@@ -103,11 +111,152 @@ residualsSNR <- function(Y, bias=TRUE){
       # Compute the standard residuals and the asymptotic variance
       R        = sqrt(N/(N-1))*(Y-mY);
       SNR      = mY / sdY;
-      asymptsd = sqrt(1+SNR^2/2 );
+      asymptsd = sqrt( 1 + SNR^2/2 );
 
       # Compute the modified residuals with asymptotically the correct distribution to estimate the LKCs
       res = ( R/sdY - mY/(2*sdY)*((R/sdY)^2-1) );
   }
   return( list( SNR=SNR, res=res, asymptsd=asymptsd) )
+
+}
+
+
+#' Computes the SNR residuals for a sample of 1d functional data
+#'
+#' @param Y Matrix containing the data. Last dimension must indicate different samples.
+#' @param type string describing which type of delta residuals is computed.
+#' Current options are "skewness" and "kurtosis".
+#' @param bias Boolean TRUE means variance estimated using 1/N, FALSE estimates it with 1/(N-1)
+#' @return Scale field
+#' @export
+DeltaResiduals <- function( Y, stat = "standard" ){
+  # Get the dimension of the field
+  dimY   = dim( Y )
+  N      = dimY[ length( dimY ) ]
+
+  # Compute the sample mean and the sample variance
+  mY = rowMeans( Y )
+  sd = sqrt( ( N - 1 ) / N * matrixStats::rowVars(Y) )
+
+  # Compute the standard residuals, the asymptotic variance and the SNR
+  R = ( Y - mY );
+
+  if( stat == "cohensd" ){
+      # Compute sample Cohen's d
+      stat  = mY / sd;
+
+      # Make it an unbiased estimate
+      if(N > 250){
+        biasfac = 1
+      }else{
+        biasfac = gamma( (N-1)/2) / gamma((N-2)/2)*sqrt(2/(N-1))
+      }
+
+      # Get plugin estimate of asymptotic variance in Gaussian case
+      asymptsd = sqrt( 1 + biasfac^2 * stat^2 / 2 )
+
+      # Get the delta residuals
+      res = ( R / sd - stat / 2 * ( ( R / sd )^2 - 1 ) )
+
+  }else if( stat == "skewness" ){
+    # Compute sample skewness
+    stat  = rowMeans( ( Y - mY )^3, 2 ) / sd^3;
+
+    # Get plugin estimate of asymptotic variance in Gaussian case
+    asymptsd = sqrt( 15 )
+
+    # Get the delta residuals
+    res = ( R / sd )^3 - stat - 3 / 2 * stat * ( ( R / sd )^2 - 1 )
+
+  }else if( stat == "kurtosis" ){
+    # Compute sample skewness
+    stat  = rowMeans( ( Y - mY )^4, 2 ) / sd^4;
+
+    # Get plugin estimate of asymptotic variance
+    asymptsd = NaN
+
+    # Get the delta residuals
+    res = ( ( R / sd )^4 - stat - 2 * stat * ( ( R / sd )^2 - 1 ) )
+
+  }else{
+    res      = R
+    stat     = mY
+    asymptsd = sd
+  }
+
+  # Get the residual variance
+  sd_res  = sqrt(  ( N - 1 ) / N * matrixStats::rowVars( res ) )
+
+  return( list( stat = stat, res = res, asymptsd = asymptsd, sd_res = sd_res ) )
+
+}
+
+#' Computes the SNR residuals for a sample of 1d functional data
+#'
+#' @param Y Matrix containing the data. Last dimension must indicate different samples.
+#' @param type string describing which type of delta residuals is computed.
+#' Current options are "skewness" and "kurtosis".
+#' @param bias Boolean TRUE means variance estimated using 1/N, FALSE estimates it with 1/(N-1)
+#' @return Scale field
+#' @export
+DeltaResiduals2 <- function( Y, stat = "standard" ){
+  # Get the dimension of the field
+  dimY   = dim( Y )
+  N      = dimY[ length( dimY ) ]
+
+  # Compute the sample mean and the sample variance
+  mY = rowMeans( Y )
+  sd = sqrt( ( N - 1 ) / N * matrixStats::rowVars(Y) )
+
+  # Compute the standard residuals, the asymptotic variance and the SNR
+  R = ( Y - mY );
+
+  if( stat == "cohensd" ){
+    # Compute sample Cohen's d
+    stat  = mY / sd;
+
+    # Make it an unbiased estimate
+    if(N > 250){
+      biasfac = 1
+    }else{
+      biasfac = gamma( (N-1)/2) / gamma((N-2)/2)*sqrt(2/(N-1))
+    }
+
+    # Get plugin estimate of asymptotic variance in Gaussian case
+    asymptsd = sqrt( 1 + biasfac^2 * stat^2 / 2 )
+
+    # Get the delta residuals
+    res = ( R / sd - stat / 2 * ( ( R / sd )^2 - 1 ) )
+
+  }else if( stat == "skewness" ){
+    # Compute sample skewness
+    stat  = rowMeans( R^3, 2 ) / sd^3;
+
+    # Get plugin estimate of asymptotic variance in Gaussian case
+    asymptsd = sqrt( 15 )
+
+    # Get the delta residuals
+    res = ( R / sd )^3 - stat - 3 / 2 * stat * ( ( R / sd )^2 - 1 )
+
+  }else if( stat == "kurtosis" ){
+    # Compute sample skewness
+    stat  = rowMeans( ( Y - mY )^4, 2 ) / sd^4;
+
+    # Get plugin estimate of asymptotic variance
+    asymptsd = NaN
+
+    # Get the delta residuals
+    res = ( ( R / sd )^4 - stat - 2 * stat * ( ( R / sd )^2 - 1 ) )
+
+  }else{
+    res      = R
+    stat     = mY
+    asymptsd = sd
+  }
+
+  # Get the residual variance
+  sd_res  = sqrt(  ( N - 1 ) / N * matrixStats::rowVars( res ) )
+
+  return( list( stat = stat, res = res, asymptsd = asymptsd, sd_res = sd_res ) )
 
 }
