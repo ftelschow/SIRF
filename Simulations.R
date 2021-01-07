@@ -25,7 +25,7 @@ library( data.table )
 library( rmutil )
 library( SCBfda )
 library( fda )
-library(ffscb)
+library( ffscb )
 
 
 ################################################################################################
@@ -59,10 +59,10 @@ param_method$gMultiplierBootstrapt = list( Mboots = Mboots, weights = "gauss" )
 param_method$rMultiplierBootstrapt = list( Mboots = Mboots, weights = "rademacher" )
 param_method$ffscb = list(  )
 
-methodVec2D    = methodVec[1:4]
-param_method2D = param_method[1:4]
+methodVec2D    = methodVec[ 1:4 ]
+param_method2D = param_method[ 1:4 ]
 
-date        = "11_27_2020"
+date        = "y2021_m01_d06"
 
 ############ Simulations
 #### Model A
@@ -194,7 +194,7 @@ print( Ie - Is )
   save.image( paste(path_sim, date,"_SimulationSmoothGauss.RData") )
 
 ############ Plot the Results and error processes
-date = "11_27_2020"
+date = "y2021_m01_d06"
 load( paste( path_sim, date, "_SimulationSmoothGauss.RData" ) )
 pdfname <- paste( path_pics, "ResultsSimulationSmoothGaussian.pdf", sep = "" )
 pdf( pdfname,  title = pdfname, width = 1.1 * 10, height = 1.1 * 7.5 )
