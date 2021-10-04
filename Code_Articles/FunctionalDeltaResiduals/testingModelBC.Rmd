@@ -1,0 +1,537 @@
+---
+  title: "Correcting for multiple maxima in the EEC approximation"
+author: "Fabian Telschow"
+date: "12/21/2020"
+output: pdf_document
+---
+  
+  ```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.width=6, fig.height=3) 
+library(SCBfun)
+library(RFT)
+library(SampleFields)
+library(tidyverse)
+```
+
+\textcolor{red}{Not sure whether we discussed the below before. It's rather simple.}
+
+# 1. The problem of multiple correlated maxima in the EEC approximation
+The problem I ran into with the GKF and tGKF for functional bands built on 
+moment statistics is prototypical. Sam also experienced it on the resting state
+data. A data driven fix can be proposed dealing with this issue. Let us explore it
+step by step. First let us generate a sample of well behaved processes.
+
+## 1.1. Processes with highly correlated extrema 
+In resting state from the UK biobank Sam found seemingly well-known
+interhemispheric correlations. In what I write now, I assume that we have an
+interhemispheric process, i.e., if we have a maxima above level $u$ on one brain
+side we also have exactly one maxima above level $u$ on the other. This needs
+to be studied more carefully on resting state data. Yet assume this model is true,
+then using the Euler charateristic approximation, we obtain
+$$
+ P\left( \max_{s\in S} X(s) > u \right) 
+  = P\Big( \chi\big( A_X(u) \big) > 2 \Big)
+  \leq { \rm EEC }(u) / 2\,.
+$$
+Doing so we assume that the threshold is high enough such that the Markov
+inequality actually is an approximated identity. More generally, if our process is
+likely to always have $k$ maxima above $u$ due to correlation, we obtain
+$$
+ P\left( \max_{s\in S} X(s) > u \right) 
+  = P\Big( \chi\big( A_X(u) \big) > k \Big)
+  \leq { \rm EEC }(u) / k\,.
+$$
+These bounds are stricter than the simple bound derived without the additional
+knowledge about the correlated maxima and especially, this allows to
+incorporate periodic processes like the cosinus process into the theory. 
+
+## 1.2. SCBs for the mean
+```{r}
+# set seed for simulations
+set.seed(666)
+# number of samples
+nSamp = 10
+# sampling locations
+x        = seq( 0, 1, length.out = 175 )
+coords   = list()
+coords$x = x
+# level of control
+alpha = 0.05
+# true mean curve
+mu    <- Vectorize( function(x){sin(4 * pi * x) * exp(-3 * x)} )
+# true standard deviation
+sigma <- Vectorize( function(x){(1.5 - x)/2} )
+
+# noise model
+covf <- function(x, y) SampleFields::covf.nonst.matern(x,
+                                                       y,
+                                                       params = c( 1, 1 / 4, 0.4 ))
+noise = function(N, x){ ArbCovProcess( N, x, covf = covf ) }
+noise =  DegrasNonGaussProcess
+# generate data from the sample
+Y = SignalPlusNoise( N = nSamp,
+                          x = x,
+                          mu = mu,
+                          sigma = sigma,
+                          noise = noise )
+
+# create a tibble for the residuals and the sample
+Y.tib <- sample2tibble( Y$values, x )
+R.tib <- sample2tibble( (Y$values - mu( x ) ) / sigma( x ) , x )
+# plot the sample and residuals
+plot.sample <- ggplot( data = Y.tib,  aes( x = location, y = value, col = Sample ) ) +
+  geom_line( ) +
+  xlab( "Location" ) + ylab( "Value" ) +
+  ggtitle( "Samples of process" ) +
+  theme(legend.position = "none") +
+  geom_hline( yintercept = 0 )
+
+plot.residuals <- ggplot( data = R.tib,
+                          aes( x = location, y = value, col = Sample ) ) +
+  geom_line( ) +
+  xlab( "Location" ) + ylab( "Value" ) +
+  ggtitle( "Untransformed Residuals" ) +
+  theme(legend.position = "none") +
+  geom_hline( yintercept = 0 )
+
+multiplot( plot.sample, plot.residuals, cols = 2 )
+
+```
+
+Using the tGKF we can construct SCBs for the mean curve. We give a short simulation
+to demonstrate that for the given error process the tGKF yields good approximations
+for the covering rate.
+
+```{r}
+# number of MC simulations
+Msim = 1e3
+# number of samples
+nSamp = 1e3
+# true mean on grid
+mux = mu(x)
+# simulation for covering rate of SCBs
+covRate <- rep(0, Msim)
+for( m in 1:Msim ){
+  # generate data from the sample
+  Y = SignalPlusNoise( N = nSamp,
+                       x = x,
+                       mu = mu,
+                       sigma = sigma,
+                       noise = noise )
+  # get sample mean and variance
+  tmp = scb_moments( Y$values,
+                     level = .95,
+                     transformation = "cohensd",
+                     moments = NULL,
+                     method  = list( name = "tGKF" ),
+                     coords  = coords,
+                     mask    = NULL )
+  
+  if( all( tmp$scb[,1] <= mux & mux <= tmp$scb[,3] ) ){
+    covRate[m] <- 1/Msim
+  }
+}
+
+print(sum(covRate))
+```
+The covering rate in this case is close to the nominal level of $0.05$. This is
+great news!
+
+Let's make a sanity check. Do we trust the aproximation from the GKF?
+  
+```{r}
+# generate data from the sample
+Y = SignalPlusNoise( N = nSamp,
+                          x = x,
+                          mu = mu,
+                          sigma = sigma,
+                          noise = noise )
+
+# get the normalizedresiduals  
+res = DeltaMomentResiduals( Y, "linear" )
+res = res$delta.residuals / as.vector(res$delta.sd)
+
+# estimate the LKCs from the delta residuals
+L = c( 1, LKC_integral( res, coords = coords ) )
+
+# get the EEC threshold
+thresh = EEC_threshold( alpha = alpha / 2, L, type = "t", nSamp - 1 )$threshold
+
+# obtain the EEC of the excursion set / the number of connected components
+number.components = apply( res, 2, function(x) EulerChar( abs(t(x)), thresh ) )
+print( mean( number.components ) )
+# plot the hostogram
+ggplot( tibble( components = number.components[number.components!=0] ), aes( x = components ) ) +
+  geom_histogram( binwidth = 0.5)
+```
+
+This is exactly what is suspected. The number of components above the threshold
+obtained through the EEC threshold of the residuals is roughly $0.05$. We can
+test this also using mutlipler bootstrap sample paths. The following code
+provides the estimate from 5,000 samples:
+  
+```{r}
+# get 5,000 bootstrap samples
+tmp = MultiplierBootstrap( res )
+
+# obtain the EEC of the excursion set / the number of connected components
+number.components.boots = apply( tmp$samples, 2,
+                                 function(x) EulerChar( abs(t(x)), thresh )
+)
+print( mean( number.components.boots ) )
+
+# plot the hostogram
+ggplot( tibble( components = number.components.boots[number.components.boots!=0] ), aes( x = components ) ) +
+  geom_histogram( binwidth = 0.5)
+```
+Samples from the empirical covariance function seem to satisfy the EEC approximation
+assumption. It is very rare that more than one maxima peaks above the threshold
+and hence the approximation will be not conservative.
+
+
+## SCBs for Cohen's $d$ parameter
+Similarly as above we can use the delta residual paradigm and the tGKF to construct
+SCBs for Cohen's $d$. The following small simulation gives the covering rate in this
+case.
+
+```{r}
+# get true cohens d
+d = mu(x) / sigma(x)
+# simulation for covering rate of SCBs
+covRate <- rep(0, Msim)
+for( m in 1:Msim ){
+  # generate data from the sample
+  Y = SignalPlusNoise( N  = nSamp,
+                            x  = x,
+                            mu = mu,
+                            sigma = sigma,
+                            noise = noise )
+  
+  # get the functional delta residuals
+  tmp = scb_moments( Y, level = .95,
+                     transformation = "cohensd",
+                     moments = NULL,
+                     method  = list( name = "tGKF" ),
+                     coords  = coords,
+                     mask    = NULL )
+  
+  if( all( tmp$scb[,1]  <= d & d <= tmp$scb[,3] ) ){
+    covRate[m] <- 1 / Msim
+  }
+}
+
+print(sum(covRate))
+```
+
+Again we are close to nominal! That's good news.
+
+Let us do the same sanity check as above.
+
+```{r}
+# get the normalized functional delta residuals
+res = SCBfun::DeltaMomentResiduals( Y$values, "cohensd" )
+res = res$delta.res / as.vector(res$delta.sd)
+
+# get bootstrap residuals
+res.boot = MultiplierBootstrap( res )$samples
+
+# estimate the LKCs from the delta residuals
+L = c( 1, LKC_integral( res, coords = list( x = x ) ) )
+
+# get the EEC threshold
+thresh = GKFthreshold( alpha = alpha/2, L, type = "t", nSamp - 1 )$threshold
+
+# obtain the EEC of the excursion set / the number of connected components
+number.components = apply( res, 2, function(x) EulerChar( abs(t(x)), thresh ) )
+print( mean( number.components ) )
+```
+
+This is interesting. The number is larger than expected. However, this might be
+explained by the fact that the residuals have the correct covariance structure,
+yet are not Gaussian. Hence let us check the Gaussian multiplier bootstrap.
+
+```{r}
+number.components.boots = apply( res.boot, 2, function(x) EulerChar( abs(t(x)), thresh ) )
+print( mean( number.components.boots ) )
+```
+
+This looks way better! Let's shortly dip a glance on the histograms:
+
+```{r}
+hist1 <- ggplot( tibble( components = number.components[number.components!=0] ),
+                 aes( x = components ) ) + 
+         geom_histogram( binwidth = 0.5)
+hist2 <- ggplot( tibble( components = number.components.boots[number.components.boots!=0] ),
+                 aes( x = components ) ) + 
+         geom_histogram( binwidth = 0.5)
+
+multiplot( hist1, hist2, cols = 2 )
+```
+
+This means that if the Cohen's $d$ statistic is roughly Gaussian for the chosen
+sample size the approximation should be well! This is what we observed in our
+simulation!
+  
+  ## 1.4. SCBs for skewness
+  
+  We now turn to an example where the standard usage of the GKF will fail. Let's
+demonstrate this failure:
+
+```{r}
+# true skewness on grid
+mux = rep(0, length(x))
+
+# simulation for covering rate of SCBs
+covRate <- rep(0, Msim)
+for( m in 1:Msim ){
+  # generate data from the sample
+  Y = SignalPlusNoise( N = nSamp,
+                            x = x,
+                            mu = mu,
+                            sigma = sigma,
+                            noise = noise )
+  # get sample mean and variance
+  tmp = scb_moments( Y, level = .95,
+                     transformation = "skewness",
+                     moments = NULL,
+                     method  = list( name = "tGKF" ),
+                     coords  = coords,
+                     mask    = NULL )
+  
+  if( all( tmp$scb[,1] <= mux & mux <= tmp$scb[,3] ) ){
+    covRate[m] <- 1/Msim
+  }
+}
+
+print(sum(covRate))
+```
+
+Checking the excursion sets of the residuals yields:
+
+```{r}
+# generate data from the sample
+Y = SignalPlusNoise( N = nSamp,
+                          x = x,
+                          mu = mu,
+                          sigma = sigma,
+                          noise = noise )
+
+# get the normalizedresiduals  
+res = DeltaMomentResiduals( Y, "skewness" )
+res = res$delta.residuals / as.vector(res$delta.sd)
+
+# estimate the LKCs from the delta residuals
+L = c( 1, LKC_integral( res, coords = coords ) )
+
+# get the EEC threshold
+thresh = EEC_threshold( alpha = alpha/2, L, type = "t", nSamp - 1 )$threshold
+
+# obtain the EEC of the excursion set / the number of connected components
+number.components = apply( res, 2, function(x) EulerChar( abs(t(x)), thresh ) )
+print( mean( number.components ) )
+# plot the hostogram
+ggplot( tibble( components = number.components[number.components!=0] ), aes( x = components ) ) +
+        geom_histogram( binwidth = 0.5)
+```
+
+While the value is roughly $0.05$ the histogram reveals that almost exclusively
+we have two peaks. This means by the Section 1.1. we need to divide the EEC by
+$2$. Let us do also the quick multiplier bootstrap check:
+
+```{r}
+# get 5,000 bootstrap samples
+tmp = MultiplierBootstrap( res )
+
+# obtain the EEC of the excursion set / the number of connected components
+number.components.boots = apply( tmp$samples, 2,
+                                 function(x) EulerChar( abs(t(x)), thresh )
+                                 )
+print( mean( number.components.boots ) )
+
+# plot the hostogram
+ggplot( tibble( components = number.components.boots[number.components.boots!=0] ), aes( x = components ) ) +
+        geom_histogram( binwidth = 0.5)
+```
+
+
+## 1.4. SCBs for cosin field
+
+We now turn to an example where the standard usage of the GKF will fail. Let's
+demonstrate this failure:
+  
+```{r}
+# number of MC simulations
+noise = SinCosSumNoise
+# change the domain x to make the process periodic
+x = seq( 0, 4, length.out = 175 )
+coords   = list()
+coords$x = x
+# true mean on grid
+mux = mu(x)
+
+# simulation for covering rate of SCBs
+covRate <- rep(0, Msim)
+for( m in 1:Msim ){
+  # generate data from the sample
+  Y = SignalPlusNoise( N  = nSamp,
+                            x  = x,
+                            mu = mu,
+                            sigma = sigma,
+                            noise = noise )
+  # get sample mean and variance
+  tmp = scb_moments( Y, level = .95,
+                     transformation = "linear",
+                     moments = NULL,
+                     method  = list( name = "tGKF" ),
+                     coords  = coords,
+                     mask    = NULL )
+  
+  if( all( tmp$scb[,1] <= mux & mux <= tmp$scb[,3] ) ){
+    covRate[m] <- 1 / Msim
+  }
+}
+
+print( sum(covRate) )
+```
+
+Checking the excursion sets of the residuals yields:
+  
+```{r}
+# generate data from the sample
+Y = SignalPlusNoise( N = nSamp,
+                          x = x,
+                          mu = mu,
+                          sigma = sigma,
+                          noise = noise )
+
+# get the normalizedresiduals  
+res = DeltaMomentResiduals( Y, "linear" )
+res = res$delta.residuals / as.vector(res$delta.sd)
+
+# estimate the LKCs from the delta residuals
+L = c( 1, LKC_integral( res, coords = coords ) )
+
+# get the EEC threshold
+thresh = EEC_threshold( alpha = alpha/2, L, type = "t", nSamp - 1 )$threshold
+
+# obtain the EEC of the excursion set / the number of connected components
+number.components = apply( res, 2, function(x) EulerChar( abs( t(x) ), thresh ) )
+print( mean( number.components ) )
+# plot the hostogram
+ggplot( tibble( components = number.components[ number.components != 0 ] ),
+        aes( x = components ) ) +
+  geom_histogram( binwidth = 0.5 )
+```
+
+While the value is roughly $0.05$ the histogram reveals that there are always
+more than two peaks. This means by the Section 1.1. we need to divide the EEC by
+$2$. Let us also do the quick multiplier bootstrap check:
+  
+```{r}
+# get 5,000 bootstrap samples
+tmp = MultiplierBootstrap( res )
+
+# obtain the EEC of the excursion set / the number of connected components
+number.components.boots = apply( tmp$samples, 2,
+                                 function(x) EulerChar( abs( t(x) ), thresh )
+)
+print( mean( number.components.boots ) )
+
+# plot the hostogram
+ggplot( tibble( components = number.components.boots[ number.components.boots != 0 ] ),
+        aes( x = components ) ) +
+  geom_histogram( binwidth = 0.5)
+```
+
+The solution given in Section 1.1 yields that:
+  
+```{r}
+# simulation for covering rate of SCBs
+covRate <- rep( 0, Msim )
+for( m in 1:Msim ){
+  # generate data from the sample
+  Y = SignalPlusNoise( N  = nSamp,
+                            x  = x,
+                            mu = mu,
+                            sigma = sigma,
+                            noise = noise )
+  # get sample mean and variance
+  tmp = scb_moments( Y, level = .9,
+                     transformation = "linear",
+                     moments = NULL,
+                     method  = list( name = "tGKF" ),
+                     coords  = coords,
+                     mask    = NULL )
+  
+  if( all( tmp$scb[,1] <= mux & mux <= tmp$scb[,3] ) ){
+    covRate[m] <- 1 / Msim
+  }
+}
+
+print( sum(covRate) )
+```
+
+# 2. Modeling maxima using EEC curves
+
+In the case of the cosine process we saw that the GMF has both $2$ and $3$
+  connected components. This implies that the correction from the previous solution
+still gives some overcoverage. Therefore we refine the idea slightly, yet again
+using Markov's inequality:
+\begin{align}
+ P\left( \max_{s\in S} X(s) > u \right) 
+  &= P\Big( \chi\big( A_X(u) \big) \geq 1 \Big)\\
+  &= \sum_{ k = 1 }^\infty P\Big( \chi\big( A_X(u) \big) = k \Big)\\
+  &= \sum_{ k = 1 }^\infty P\Big( \chi\big( A_X(u) \big) \geq k \Big) p_k\\  
+  &\leq { \rm EEC }(u)\cdot\sum_{ k = 1 }^\infty \frac{ p_k }{ k }\\
+  &\leq { \rm EEC }(u)\cdot\eta\,.
+\end{align}
+For the moment we ignore studying the convergence of this sum. In the applications
+we saw that this is no problem.
+Here we defined
+$$
+p_k = \frac{ P\Big( \chi\big( A_X(u) \big) = k \Big) }{ P\Big( \chi\big( A_X(u) \big) \geq k \Big) }\,,
+$$
+which is the conditional probability of $k$ components given that we have at least
+$k$ components. As Armin suggested we might want to model this using Poisson or
+Poisson-Gamma distributions. Just for the sake of demonstrating its usefulness let
+me propose a simple solution of estimation of $p_k$ based on the GMF.
+The following code snippet does do the trick:
+```{r}
+# get 5,000 bootstrap samples using the GMF
+tmp = MultiplierBootstrap( res )
+
+# obtain the EEC of the excursion set / the number of connected components
+number.components = as.factor( apply( tmp$samples, 2,
+                                 function(x) EulerChar( abs( t(x) ), thresh )
+                                 ) )
+# Count the amount of realizations per factor                    
+countsC = tibble( comps = number.components ) %>%
+                            group_by( comps ) %>% count
+cumCount = rev( cumsum( rev( countsC$n ) ) )
+
+# Estimate the conditional probability
+p_eq_k  = countsC$n / 5000
+p_geq_k = cumCount / 5000
+names(p_eq_k) <- names(p_geq_k) <- countsC$comps
+
+p =  p_eq_k / p_geq_k
+print( p )
+```
+Having got the estimate of the conditional probabilities we can use them to get
+our adjusted scaling factor for the ${\rm EEC}$ curve.
+```{r}
+# Scaling factor
+fac  <- sum( p[ 2:length(p) ] / as.numeric(countsC$comps[2:length(p)]) )
+print(fac)
+```
+This factor is greater than $0.5$. Hence the simpler bound of $0.5$ should be
+used instead. However, the proposed method will improve the EEC approximation
+as soon as the smallest number of components is not the most likely to appear.
+This can be seen using a simple example where we assume that we only have
+$ k $ or $k + 1 $ components. In that case we have that
+$$
+  \eta = \frac{ p_k }{ k } +  \frac{ 1 }{ k + 1 } \in
+        \left( \frac{ 1 }{ k + 1 }, \frac{ 2k + 1 }{ k^2 + k } \right)
+$$
+Here we note that the highest $p_k$ always is $1$.
