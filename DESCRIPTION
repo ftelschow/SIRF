@@ -1,6 +1,6 @@
-Package: SCBfda
+Package: SIRF
 Type: Package
-Title: Simultaneous Confidence Bands for Functional Data
+Title: Simultaneous Inference for Random Fields
 Version: 0.1.0
 Author: Fabian J.E. Telschow
 Maintainer: Fabian J.E. Telschow <ftelschow@ucsd.edu>

@@ -1,4 +1,4 @@
-require(SCBfda)
+require(SIRF)
 ## test the generation of samples
 M = FunctionalDataSample( N = 10,
                           x = seq( 0, 1, length.out = 100 ),
@@ -9,7 +9,7 @@ M = FunctionalDataSample( N = 10,
 
 ## test the covering rate function in 1D
 covRate_simulation(
-  trials = 10,
+  trials = 2e3,
   scenario = "SpN",
   method = "tGKF",
   level = 0.95,
@@ -27,7 +27,15 @@ x                            = seq(0,1,length.out=100)
 param_scenario$xeval         = seq(0,1,length.out=200)
 param_scenario$SmoothWeights = locpol::locLinWeightsC( x=x, xeval=seq(0,1,length.out=200), bw=0.01, kernel=locpol::gaussK)$locWeig
 covRate_simulation(
-  trials = 5000, scenario = "SpN", param_scenario=param_scenario, method = "tGKF", level=0.95, N=10, mu=function(x){rep(0,length(x)) }, noise=GaussDensitySumNoise, sigma=function(x) rep(1,length(x)), sd_ObsNoise=0, x=x
+  trials   = 5000,
+  scenario = "SpN",
+  scenario = param_scenario,
+  method   = "tGKF",
+  level    = 0.95,
+  N        = 10,
+  mu       = function(x){ rep( 0, length(x) ) },
+  noise    = GaussDensitySumNoise,
+  sigma    = function(x) rep(1,length(x)), sd_ObsNoise=0, x=x
 )
 
 ## test the covering rate function in 2D
