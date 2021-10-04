@@ -4,16 +4,15 @@ Title: Simultaneous Confidence Bands for Functional Data
 Version: 0.1.0
 Author: Fabian J.E. Telschow
 Maintainer: Fabian J.E. Telschow <ftelschow@ucsd.edu>
-Description: This package computes simultaneous confidence bands for the
-    population mean or the population signal to noise ratio of a sample
-    of functional data on a rectangular domain in 1D or 2D.
-    It has the option to estimate the quantile with a non-parametric bootstrap
-    or a multiplier bootstrap. The main novelty is that it also includes
-    estimation of the quantile using the Gaussian Kinematic formula. Please
-    consult the description of a function to choose the apropriate method for
-    your application.
-    The default and recommanded quantile estimation is the Gaussian Kineamtic
-    formula for t-processes.
+Description: This package implements methods for Simultaneous Inference
+    for Random Fields (SIRF).
+    Currently, the main functionality is computation of simultaneous confidence
+    bands for the population mean or moment based statistics of differentiable
+    random field data over a rectangular domain in 1D or 2D.
+    Options to estimate the quantile are a non-parametric bootstrap,
+    a multiplier bootstrap or the GKF. The latter is the main novelty since
+    it allows for fast computation of the quantiles even for higher dimensional
+    domains.
 License: MIT
 Encoding: UTF-8
 LazyData: true
