@@ -2,7 +2,7 @@
 args = commandArgs(trailingOnly = TRUE)
 
 # Load packages
-library(SCBfun)
+library(SIRF)
 library(SampleFields)
 library(RFT)
 
