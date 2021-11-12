@@ -39,7 +39,7 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
   if( Model == "ModelB" ){
     mu_model    = function(x){ ( x-0.3 )^2 }
     sigma_model = function(x){ (sin(3*pi*x) + 1.5) / 6 }
-    
+
     covf <- function(x, y) SampleFields::covf.nonst.matern(x,
                                                            y,
                                                            params = c( 1, 1 / 4, 0.4 ))
@@ -59,7 +59,7 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                  TRUE,
                  TRUE,
                  FALSE )
-    
+
     biasvec = c( TRUE,
                  FALSE,
                  TRUE,
@@ -67,12 +67,12 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                  TRUE,
                  FALSE,
                  FALSE )
-    
+
     trueValue = rbind(
       t(matrix(mu_model(x) / sigma_model(x) / vapply(x, function(x) sqrt(covf(x,x)), 1), length(x), sum(transformationvec=="cohensd"))),
       matrix(0, sum(transformationvec == "skewness"), length(x))
     )
-    
+
   }else if( Model == "ModelC" ){
     mu_model    = function(x){sin(4 * pi * x) * exp(-3 * x)}
     sigma_model = function(x){(1.5 - x)}
@@ -86,32 +86,19 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                 TRUE,
                 TRUE,
                 TRUE)
-    
+
     biasvec = c(TRUE,
                 FALSE,
                 TRUE,
                 FALSE)
-    
-    # Estimate sample skewness using Monte Carlo
-    MCsim = 5e3
-    skewnessMC <- array(NaN, dim = c(length(x), length(Nvec), MCsim) )
-    for(m in 1:MCsim){
-      Y1 <- SignalPlusNoise(N  = max(Nvec),
-                            x  = x,
-                            mu = mu_model,
-                            noise = noise_model,
-                            sigma = sigma_model)
-      for(n in 1:length(Nvec)){
-        f <- DeltaMomentResiduals(Y = Y1$values[,1:Nvec[n]],
-                                  transformation = "skewness")
-        skewnessMC[, n, m] <- f$statistic 
-      }
-    }
-    skew_true <- apply(skewnessMC, 1:2, mean)
-    
+
+    f <- function(x) sqrt(2) / 6 * sin(pi * x)
+    g <- function(x) 2 / 3 * (x - 0.5)
+    skew_thyC <- (8 * f(x)^3 + 2 * g(x)^3) / (2*f(x)^2 + g(x)^2)^(3/2)
+
     trueValue = rbind(
       t(matrix(mu_model(x) / sigma_model(x), length(x), sum(transformationvec=="cohensd"))),
-      t(skew_true)
+      t(matrix(skew_thyC, length(x), sum(transformationvec=="cohensd")))
     )
     rm( skew_true, skewnessMC, f )
   }else{
@@ -134,7 +121,7 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                  TRUE,
                  TRUE,
                  FALSE )
-    
+
     biasvec = c( TRUE,
                  FALSE,
                  TRUE,
@@ -142,14 +129,14 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                  TRUE,
                  FALSE,
                  FALSE )
-    
+
     trueValue = rbind(
       t(matrix(mu_model(x) / sigma_model(x), length(x), sum(transformationvec=="cohensd"))),
       matrix(0, sum(transformationvec == "skewness"), length(x))
     )
   }
-  
-  
+
+
 
   for( l in (1:length(transformationvec)) ){
     bias.l           = biasvec[l]
