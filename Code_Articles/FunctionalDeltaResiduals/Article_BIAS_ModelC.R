@@ -1,6 +1,6 @@
 ## This short script demonstrates that the Model C overcoverage
 
-library(SCBfun)
+library(SIRF)
 library(RFT)
 library(SampleFields)
 library(tidyverse)
@@ -24,7 +24,7 @@ if(model ==  "ModelA"){
   # true standard deviation
   sigma <- Vectorize( function(x){((1 - x - 0.4)^2 + 1) / 6} )
   # noise model
-  noise = RandomNormalSum  
+  noise = RandomNormalSum
 }else if(model ==  "ModelB"){
   # true mean curve
   mu    <- Vectorize( function(x){sin(4 * pi * x) * exp(-3 * x)} )
@@ -41,7 +41,7 @@ if(model ==  "ModelA"){
   # true standard deviation
   sigma <- Vectorize(function(x){(1.5 - x)} )
   # noise model
-  noise = DegrasNonGaussProcess 
+  noise = DegrasNonGaussProcess
 }
 
 Msim  = 5e2
@@ -54,7 +54,7 @@ for( m in 1:Msim ){
                        mu = mu,
                        sigma = sigma,
                        noise = noise )
-  
+
   # get the normalized functional delta residuals
   scbY = scb_moments(  Y$values,
                        level          = .95,
