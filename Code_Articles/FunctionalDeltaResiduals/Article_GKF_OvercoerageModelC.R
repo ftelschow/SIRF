@@ -1,6 +1,6 @@
 ## This short script demonstrates that the Model C overcoverage
 
-library(SCBfun)
+library(SIRF)
 library(RFT)
 library(SampleFields)
 library(tidyverse)
@@ -24,7 +24,7 @@ if(model ==  "ModelA"){
   # true standard deviation
   sigma <- Vectorize( function(x){((1 - x - 0.4)^2 + 1) / 6} )
   # noise model
-  noise = RandomNormalSum  
+  noise = RandomNormalSum
 }else if(model ==  "ModelB"){
   # true mean curve
   mu    <- Vectorize( function(x){sin(4 * pi * x) * exp(-3 * x)} )
@@ -41,7 +41,7 @@ if(model ==  "ModelA"){
   # true standard deviation
   sigma <- Vectorize(function(x){(1.5 - x)} )
   # noise model
-  noise = DegrasNonGaussProcess 
+  noise = DegrasNonGaussProcess
 }
 
 # generate data from the sample
@@ -74,10 +74,10 @@ number.components.boots = apply( res.boot, 2, function(x) EulerChar( abs(t(x)), 
 
 
 hist1 <- ggplot( tibble( components = number.components[number.components!=0] ),
-                 aes( x = components ) ) + 
+                 aes( x = components ) ) +
   geom_histogram( binwidth = 0.5)
 hist2 <- ggplot( tibble( components = number.components.boots[number.components.boots!=0] ),
-                 aes( x = components ) ) + 
+                 aes( x = components ) ) +
   geom_histogram( binwidth = 0.5)
 
 multiplot( hist1, hist2, cols = 2 )
