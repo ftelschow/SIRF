@@ -1,7 +1,7 @@
-# 
+#
 
 # Load packages
-library( SCBfun )
+library(SIRF)
 library( SampleFields )
 
 #
@@ -26,12 +26,12 @@ for(model in Modelvec){
                           "cohensd",
                           "skewness",
                           "skewness")
-    
+
     se.est <- c(TRUE,
                 TRUE,
                 TRUE,
                 TRUE)
-    
+
     biasvec = c(TRUE,
                 FALSE,
                 TRUE,
@@ -44,7 +44,7 @@ for(model in Modelvec){
                           "skewness",
                           "skewness",
                           "skewness")
-    
+
     se.est <- c(TRUE,
                 TRUE,
                 FALSE,
@@ -52,21 +52,21 @@ for(model in Modelvec){
                 TRUE,
                 TRUE,
                 FALSE)
-    
+
     biasvec = c(TRUE,
                 FALSE,
                 TRUE,
                 FALSE,
                 TRUE,
                 FALSE,
-                FALSE)    
+                FALSE)
   }
-  
+
   for(l in 1:length(transformationvec)){
     transformation.l = transformationvec[l]
     bias.l = biasvec[l]
     se.est.l = se.est[l]
-  
+
     for(n in 1:simMax){
       # Simulate the covering rate
       load( file = paste( paste(path_wd, "Workspaces/",sep = ""),
@@ -79,7 +79,7 @@ for(model in Modelvec){
                           ".rdata",
                           sep = "" ) )
       if(n == 1){
-        covAll  <- cov  
+        covAll  <- cov
         MsimAll <- Msim
       }else{
         covAll  <- covAll + cov
@@ -88,7 +88,7 @@ for(model in Modelvec){
   }
   covAll <- covAll / simMax
   colnames(covAll) <- c("GKF", "tGKF", "gMult", "tgMult", "rMult", "rtMult")
-  
+
   # Plot the simulation results
   pngname <- paste( path_pics,
                     model, "_",
@@ -100,7 +100,7 @@ for(model in Modelvec){
   covRates = covAll
   Msim     = MsimAll
   lvl      = level
-  title = "Simultaneous Confidence Bands" 
+  title = "Simultaneous Confidence Bands"
   png( pngname, width = 550, height = 450 )
   target <- sqrt( lvl * ( 1 - lvl ) / Msim ) * c(-qnorm(lvl/2 + 1/2), 0, qnorm(lvl/2 + 1/2)) + lvl
   xLab <- rownames(covRates)
@@ -108,7 +108,7 @@ for(model in Modelvec){
   covs <- as_tibble(covRates, rownames = "N") %>%
     melt(., id.vars = "N", variable = "Method", value.name = "CovRate") %>%
     as_tibble() %>% mutate_if(is.character, as.numeric)
-  
+
   # Plot the Covering Rates by Method
   print( ggplot(covs, aes(N, CovRate, group = Method, col = Method)) +
     geom_point() + geom_line() +
@@ -118,7 +118,7 @@ for(model in Modelvec){
     geom_hline( yintercept = target[1], linetype = "dashed" ) +
     geom_hline( yintercept = target[3], linetype = "dashed" ) )
   dev.off()
-  
+
   # Save the concatinated data
   save( list = c("covRates", "Msim", "lvl"), file = paste( paste(path_wd, "Workspaces/",sep = ""),
                       date, "_",
