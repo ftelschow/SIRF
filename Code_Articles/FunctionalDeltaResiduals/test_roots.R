@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 # Preapre workspace
 #-------------------------------------------------------------------------------
-require(SCBfun)
+library(SIRF)
 require(SampleFields)
 
 Model   = "ModelA" # "ModelB",  "ModelC"
