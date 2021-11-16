@@ -98,9 +98,9 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
 
     trueValue = rbind(
       t(matrix(mu_model(x) / sigma_model(x), length(x), sum(transformationvec=="cohensd"))),
-      t(matrix(skew_thyC, length(x), sum(transformationvec=="cohensd")))
+      t(matrix(skew_thyC, length(x), sum(transformationvec=="skewness")))
     )
-    rm( skew_true, skewnessMC, f )
+ rm( g, f )
   }else{
     mu_model    = function(x){sin(4 * pi * x) * exp(-3 * x)}
     sigma_model = function(x){((1 - x - 0.4)^2 + 1) / 6}
