@@ -249,10 +249,19 @@ maxQuantile <- function( R,
 
 #' Computes the quantile of the maximum statistic
 #'
-#' @param R array of dimension K_1 x ... x K_D x N containing N-realizations of
-#' a random field over a D-dimensional domain.
-#' @param alpha numeric the upper tail probability
-#' @param method
+#' @param Msim number of simulations.
+#' @param Nvec vector containing the sample sizes
+#' @param level nominal covering level
+#' @param method a method for quantile estimation
+#' @param x
+#' @param mu
+#' @param sigma
+#' @param noise
+#' @param transformation
+#' @param moments
+#' @param se.bias
+#' @param se.est
+#' @param trueValue
 #'
 #' @return quantile of the maximum process
 #' @export
@@ -267,7 +276,7 @@ covering_scb <- function( Msim  = 5e4,
                           noise,
                           transformation,
                           moments = NULL,
-                          bias,
+                          se.bias,
                           se.est,
                           trueValue,
                           ... ){
