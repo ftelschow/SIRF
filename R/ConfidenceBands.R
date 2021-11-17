@@ -39,15 +39,15 @@
 #'   \item q quantile of the maximum of the residual field
 #' }
 #' @export
-scb_moments <- function(  Y,
-                          level          = .95,
-                          transformation = "linear",
-                          moments        = NULL,
-                          method  = list(name = "tGKF", field = "t"),
-                          bias    = FALSE,
-                          se.est  = TRUE,
-                          coords  = NULL,
-                          mask    = NULL ){
+scb_moments <- function(Y,
+                        level          = .95,
+                        transformation = "linear",
+                        moments        = NULL,
+                        method   = list(name = "tGKF", field = "t"),
+                        bias.est = "asymptotic",
+                        se.est   = "estimate",
+                        coords   = NULL,
+                        mask     = NULL){
   #----- Check user input
   # Check input Y
   if( !is.array( Y ) ){
@@ -107,43 +107,43 @@ scb_moments <- function(  Y,
 
   #----- Compute the SCB
   # Get the se estimate or use the true for Gaussian data
-  if( se.est ){
-    se  <- sqrt( N / ( N - 1 ) ) * residuals$delta.sd / sqrt( N )
-  }else{
-    if( transformation == "cohensd" ){
-      se <- sqrt( 1 + residuals$statistic^2 / 2 ) / sqrt(N)
+  if(se.est == "estimate"){
+    se  <- sqrt(N / (N - 1)) * residuals$delta.sd / sqrt(N)
+  }else if(se.est == "asymptotic"){
+    if(transformation == "cohensd"){
+      se <- sqrt(1 + residuals$statistic^2 / 2) / sqrt(N)
     }else if( transformation == "skewness" ){
-      se <- sqrt( 6 * ( N-2 ) / ( N+1 ) / ( N+3 ) )
-    }else if( transformation %in% c( "kurtosis", "kurtosis (unbiased)" ) ){
-      se <- sqrt( 24 * N * (N-2) * (N-3) / (N+1)^2 / (N+3) / (N+5) )
+      se <- 6 / sqrt(N)
+    }else if(transformation %in% c("skewness", "kurtosis", "kurtosis (unbiased)")){
+      se <- 24 / sqrt(N)
     }
+  }else if(se.est == "exact"){
+      se <- se_Gaussian(transformation, N)
   }
 
-  if( bias ){
-    scb <- residuals$statistic - residuals$hatbias - q *  se
-    scb <- cbind( scb, residuals$statistic - residuals$hatbias )
-    scb <- cbind( scb, residuals$statistic - residuals$hatbias + q * se )
-  }else{
-    scb <- residuals$statistic - q *  se
-    scb <- cbind( scb, residuals$statistic )
-    scb <- cbind( scb, residuals$statistic + q * se )
+  # Get the se estimate or use the true for Gaussian data
+  if(bias.est == "estimate"){
+    bias  <- residuals$hatbias
+  }else if(bias.est == "asymptotic"){
+    bias <- 0
+  }else if(bias.est == "exact"){
+    bias <- bias_Gaussian(transformation, N)
   }
 
-  colnames( scb ) <- c( "SCB.low", "est", "SCB.up" )
+  # Get the confidence bands
+  scb <- residuals$statistic - bias - q *  se
+  scb <- cbind(scb, residuals$statistic - bias)
+  scb <- cbind(scb, residuals$statistic - bias + q * se)
+
+  colnames( scb ) <- c("SCB.low", "est", "SCB.up")
 
   #----- Return a list containing estimate of the mean, SCBs etc.
-  if( bias ){
-    list( scb   = scb,
-          level = level,
-          q     = q,
-          residuals = residuals,
-          bias  = residuals$hatbias  )
-  }else{
-    list( scb   = scb,
-          level = level,
-          q     = q,
-          residuals = residuals  )
-  }
+  list(scb   = scb,
+       level = level,
+       q     = q,
+       residuals = residuals,
+       bias  = bias,
+       se    = se)
 }
 
 #' Computes the quantile of the maximum statistic

@@ -42,10 +42,10 @@ DeltaMomentResiduals <- function( Y,
     }else if( transformation == "cohensd" ){
       transformation <- f ~ mu1 / sqrt( mu2 - mu1^2 )
       moments <- c("mu1", "mu2")
-    } else if( transformation == "skewness" ){
+    } else if( transformation == "skewness" ){# Fisher's g1
       transformation <- f ~ ( mu3 - 3*mu2*mu1 + 2*mu1^3 ) / ( mu2 - mu1^2 )^(3/2)
       moments <- c("mu1", "mu2", "mu3")
-    }else if( transformation == "kurtosis" ){
+    }else if( transformation == "kurtosis" ){# Fisher's g2
       transformation <- f ~ (mu4 - 4 * mu1 * mu3 + 6 * mu1^2 * mu2 - 3 * mu1^4) / (mu2 - mu1^2)^2 - 3
       moments <- c("mu1", "mu2", "mu3", "mu4")
     }else if( transformation == "kurtosis (unbiased)" ){

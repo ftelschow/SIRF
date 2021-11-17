@@ -10,6 +10,58 @@
 # Developer notes:
 # - Style guideline NOT included
 #------------------------------------------------------------------------------#
+#' This functions computes the standard
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+se_Gaussian <- function(transformation, N,...){
+  if(transformation == "cohensd"){# sqrt(N)\hat d ~ non-central t with nc = sqrt(N)d, df = N-1
+    df = N - 1
+    nc = sqrt(N) * hatd
+
+    if( df < 320){
+      fac <- sqrt(df / 2) * gamma((df - 1) / 2) / gamma(df / 2)
+    }else{
+      fac <- 1 / (1 - 3 / (4 * df -1 ))
+    }
+
+    se <- sqrt(( df * (1 + nc^2) / (df - 2) - nc^2 * fac^2 )) / sqrt(N)
+  }
+  else if(transformation == "skewness"){
+    se <- sqrt(6 * (N - 2) / (N + 1) / (N + 3))
+  }else if(transformation == "kurtosis"){
+    se <- sqrt(24 * N * (N - 2) * (N - 3) / (N + 1)^2 / (N + 3) / (N + 5))
+  }
+  return(se)
+}
+
+#' This functions computes the bias of certain transformations under Gaussianity
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+bias_Gaussian <- function(transformation, N,...){
+  if(transformation == "cohensd"){# sqrt(N)\hat d ~ non-central t with nc = sqrt(N)d, df = N-1
+    nu = N-1
+
+    if( df < 320){
+      fac <- sqrt(df / 2) * gamma((df - 1) / 2) / gamma(df / 2)
+    }else{
+      fac <- 1 / (1 - 3 / (4 * df -1 ))
+    }
+
+    bias <- hatd * fac
+  }
+  else if(transformation == "skewness"){
+    bias <- 0
+  }else if(transformation == "kurtosis"){
+    bias <- -6 / (N + 1)
+  }
+  return(bias)
+}
 
 #' Computes the scale field for a sample of 1d functional data
 #'
