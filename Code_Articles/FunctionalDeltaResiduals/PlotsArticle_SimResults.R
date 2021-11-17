@@ -10,15 +10,15 @@ require(fields)
 require(reshape2)
 
 #
-path_wd   <- "/home/fabian/Seafile/Code/Rpackages/SCBfun/DeltaResiduals/"
-path_pics <- "/home/fabian/Seafile/Projects/2019_DeltaResiduals/Article/Figures/"
+path_wd   <- "~/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/"
+path_pics <- "~/Seafile/Projects/2019_DeltaResiduals/Article/Figures/"
 # Set the working path
 setwd(path_wd)
 
 # Get the simulation file from source
 #source(paste(path_wd, "Workspaces/Variance_Simulation.Rdata", sep = ""))
 
-date  = "2021_05_31"
+date  = "2021_11_15"
 model = "ModelC" #  "ModelA" #  "ModelC" #
 transformation.l ="cohensd" #  "skewness" #
 
@@ -258,3 +258,4 @@ print( ggplot(covs, aes(N, CovRate, group = Method, col = Method)) +
          coord_cartesian(ylim = c(ylow, yup ))
 )
 dev.off()
+

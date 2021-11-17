@@ -5,8 +5,8 @@ library(SIRF)
 library( SampleFields )
 
 #
-path_wd   <- "/home/fabian/Seafile/Code/Rpackages/SCBfun/DeltaResiduals/"
-path_pics <- "/home/fabian/Seafile/Code/Rpackages/SCBfun/DeltaResiduals/Pics/"
+path_wd   <- "/home/fabian/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/"
+path_pics <- "/home/fabian/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/Pics/"
 # Set the working path
 setwd(path_wd)
 
@@ -15,9 +15,9 @@ source(paste(path_wd, "Plot_Functions.R", sep = ""))
 
 # Define the simulation parameters
 
-Modelvec = c("ModelA", "ModelB", "ModelC")
+Modelvec = "ModelC"#c("ModelA", "ModelB", "ModelC")
 
-date   = "2021_05_31"
+date   = "2021_11_15"
 simMax = 20
 
 for(model in Modelvec){
