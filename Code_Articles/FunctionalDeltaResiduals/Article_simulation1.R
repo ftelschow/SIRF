@@ -13,7 +13,7 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                                 level   = .95,  # level of simultaneous control
                                 sim_tag = "",
                                 path_wd = "~/Seafile/Projects/2019_DeltaResiduals/",
-                                date    = "YEAR_MO_DY" ){
+                                date    = "YEAR_MO_DY",... ){
   # General constants
   path_data <- paste( path_wd, "Workspaces/", sep = "" )
 
@@ -52,21 +52,21 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                            "skewness",
                            "skewness",
                            "skewness" )
-    se.est <- c( TRUE,
-                 TRUE,
-                 FALSE,
-                 FALSE,
-                 TRUE,
-                 TRUE,
-                 FALSE )
+    se.est <- c( "estimate",
+                 "estimate",
+                 "exact gaussian",
+                 "exact gaussian",
+                 "estimate",
+                 "estimate",
+                 "exact gaussian" )
 
-    biasvec = c( TRUE,
-                 FALSE,
-                 TRUE,
-                 FALSE,
-                 TRUE,
-                 FALSE,
-                 FALSE )
+    biasvec = c( "estimate",
+                 "asymptotic gaussian",
+                 "estimate",
+                 "asymptotic gaussian",
+                 "estimate",
+                 "asymptotic gaussian",
+                 "asymptotic gaussian" )
 
     trueValue = rbind(
       t(matrix(mu_model(x) / sigma_model(x) / vapply(x, function(x) sqrt(covf(x,x)), 1), length(x), sum(transformationvec=="cohensd"))),
@@ -82,15 +82,15 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                            "cohensd",
                            "skewness",
                            "skewness" )
-    se.est <- c(TRUE,
-                TRUE,
-                TRUE,
-                TRUE)
+    se.est <- c("estimate",
+                "estimate",
+                "estimate",
+                "estimate")
 
-    biasvec = c(TRUE,
-                FALSE,
-                TRUE,
-                FALSE)
+    biasvec = c("estimate",
+                "asymptotic gaussian",
+                "estimate",
+                "asymptotic gaussian")
 
     f <- function(x) sqrt(2) / 6 * sin(pi * x)
     g <- function(x) 2 / 3 * (x - 0.5)
@@ -114,21 +114,21 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                            "skewness",
                            "skewness",
                            "skewness" )
-    se.est <- c( TRUE,
-                 TRUE,
-                 FALSE,
-                 FALSE,
-                 TRUE,
-                 TRUE,
-                 FALSE )
+    se.est <- c( "estimate",
+                 "estimate",
+                 "exact gaussian",
+                 "exact gaussian",
+                 "estimate",
+                 "estimate",
+                 "exact gaussian" )
 
-    biasvec = c( TRUE,
-                 FALSE,
-                 TRUE,
-                 FALSE,
-                 TRUE,
-                 FALSE,
-                 FALSE )
+    biasvec = c( "estimate",
+                 "asymptotic gaussian",
+                 "estimate",
+                 "asymptotic gaussian",
+                 "estimate",
+                 "asymptotic gaussian",
+                 "asymptotic gaussian")
 
     trueValue = rbind(
       t(matrix(mu_model(x) / sigma_model(x), length(x), sum(transformationvec=="cohensd"))),
@@ -139,7 +139,7 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
 
 
   for( l in (1:length(transformationvec)) ){
-    bias.l           = biasvec[l]
+    bias.est.l       = biasvec[l]
     transformation.l = transformationvec[l]
     trueValue.l      = trueValue[l,]
     se.est.l         = se.est[l]
@@ -152,17 +152,17 @@ Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                         sigma  = sigma_model,
                         noise  = noise_model,
                         transformation = transformation.l,
-                        bias   = bias.l,
-                        se.est = se.est.l,
-                        trueValue = trueValue.l )
+                        bias.est = bias.est.l,
+                        se.est   = se.est.l,
+                        trueValue = trueValue.l,... )
     save( list = c("cov", "Msim", "Nvec", "level", "methvec", "x", "mu_model", "sigma_model",
-            "noise_model", "transformation.l", "bias.l", "se.est.l", "trueValue.l"),
+            "noise_model", "transformation.l", "bias.est.l", "se.est.l", "trueValue.l"),
           file = paste( path_data,
                               date, "_",
                               Model, "_",
                               transformation.l,
-                              "_bias_", bias.l,
-                              "_se.est_", se.est.l,
+                              "_bias_", gsub(" ", "_", bias.est.l),
+                              "_se.est_", gsub(" ", "_", se.est.l),
                               "_", sim_tag,
                               ".rdata",
                               sep = "" ) )
