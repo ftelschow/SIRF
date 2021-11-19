@@ -9,7 +9,7 @@
 Article_simulation2 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                                 Msim    = 5e3, # number of simulations
                                 Nvec    = c(50, 100, 200, 400, 800), # sample sizes considered
-                                x       = seq(0, 1, length.out = 175), # locations the process is evaluated at
+                                x       = 175, # locations the process is evaluated at
                                 level   = .95,  # level of simultaneous control
                                 obs     = 0.05,
                                 sim_tag = "",
@@ -17,7 +17,7 @@ Article_simulation2 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                                 date    = "YEAR_MO_DY",... ){
   # General constants
   path_data <- paste(path_wd, "Schreibtisch/", sep = "")#"Workspaces/", sep = "")
-
+  x = seq(0, 1, length.out = x)
   #-------------------------------------------------------------------------------
   # General Simulation parameters
   #-------------------------------------------------------------------------------
@@ -165,6 +165,8 @@ Article_simulation2 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                         transformation.l,
                         "_bias_", gsub(" ", "_", bias.est.l),
                         "_se_", gsub(" ", "_", se.est.l),
+                        "_nx_", length(x),
+                        "_obs_", obs,
                         "_", sim_tag,
                         ".rdata",
                         sep = "" ) )
