@@ -35,10 +35,12 @@ DeltaMomentResiduals <- function( Y,
 
   # Choice of statistic if gradf is a string
   #-----------------------------------------------------------------------------
+  lin <- FALSE
   if( is.character(transformation) ){
     if( transformation == "linear" ){
       transformation <- f ~ mu1
       moments <- "mu1"
+      lin <- TRUE
     }else if( transformation == "cohensd" ){
       transformation <- f ~ mu1 / sqrt( mu2 - mu1^2 )
       moments <- c("mu1", "mu2")
@@ -98,6 +100,10 @@ DeltaMomentResiduals <- function( Y,
   gradf.mu <- t(apply( mu,
                         1,
                         function(x) attr(do.call(gradf, as.list(x)), "gradient") ))
+
+  if(lin){
+    gradf.mu <- t(gradf.mu)
+  }
 
   # hessian of the transformation evaluated at the estimated moments
   hessf.mu <- matrix( NaN, N.locs, N.hess.weights )

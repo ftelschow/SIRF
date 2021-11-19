@@ -16,7 +16,7 @@
 #' @param N Vector grid for evaluation of the smoothed field
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
-se_Gaussian <- function(transformation, N,...){
+se_Gaussian <- function(transformation, N, hatd = NULL){
   if(transformation == "cohensd"){# sqrt(N)\hat d ~ non-central t with nc = sqrt(N)d, df = N-1
     df = N - 1
     nc = sqrt(N) * hatd
@@ -43,7 +43,7 @@ se_Gaussian <- function(transformation, N,...){
 #' @param N Vector grid for evaluation of the smoothed field
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
-bias_Gaussian <- function(transformation, N,...){
+bias_Gaussian <- function(transformation, N, hatd = NULL){
   if(transformation == "cohensd"){# sqrt(N)\hat d ~ non-central t with nc = sqrt(N)d, df = N-1
     nu = N-1
 
@@ -73,7 +73,12 @@ bias_Gaussian <- function(transformation, N,...){
 #' @param Weights Matrix containing a smoothing matrix. If specified all other parameters for smoothing are ignored.
 #' @return Scale field
 #' @export
-scaleField <- function( Y, x=seq(0,1,length.out=nrow(Y)), xeval=seq(0,1,length.out=2*nrow(Y)), h = seq(x[2],0.1,length.out=20), method="loclin", kernel=locpol::gaussK, Weights=NULL ){
+scaleField <- function(Y,
+                       x = seq(0, 1, length.out = nrow(Y)),
+                       xeval = seq(0, 1, length.out = 2 * nrow(Y)),
+                       h = seq(x[2], 0.1, length.out = 20),
+                       method = "loclin",
+                       kernel = locpol::gaussK, Weights = NULL ){
   ########### Check User Input
   ### Check Y
   if( !(is.matrix(Y) | is.vector(Y)) ){
