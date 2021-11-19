@@ -4,9 +4,15 @@
 \alias{scaleField}
 \title{Computes the scale field for a sample of 1d functional data}
 \usage{
-scaleField(Y, x = seq(0, 1, length.out = nrow(Y)), xeval = seq(0, 1,
-  length.out = 2 * nrow(Y)), h = seq(x[2], 0.1, length.out = 20),
-  method = "loclin", kernel = locpol::gaussK, Weights = NULL)
+scaleField(
+  Y,
+  x = seq(0, 1, length.out = nrow(Y)),
+  xeval = seq(0, 1, length.out = 2 * nrow(Y)),
+  h = seq(x[2], 0.1, length.out = 20),
+  method = "loclin",
+  kernel = locpol::gaussK,
+  Weights = NULL
+)
 }
 \arguments{
 \item{Y}{Matrix containing the data. Last dimension must indicate different samples.}

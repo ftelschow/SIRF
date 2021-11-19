@@ -2,19 +2,40 @@
 % Please edit documentation in R/BootstrapQuantileApproximations.R
 \name{MultiplierBootstrap}
 \alias{MultiplierBootstrap}
-\title{Multiplier bootstrap estimator for the quantile of the maximum of a random field. The function contains a multiplier-t version based on Telschow Schwartzmann (2018) "Simultaneous confidence bands for non-parametric regression with functional data" and a regular version based on Cherno. For large sample sizes the versions do agree, however, for small sample sizes the bootstrap-t has better covering rates, but a slightly higher variability in the estimate of the quantile than the simple version based on Cherno.}
+\title{Multiplier bootstrap estimator for the quantile of the maximum of a random field. The
+function contains a multiplier-t version based on Telschow Schwartzmann (2019)
+"Simultaneous confidence bands for non-parametric regression with functional data"
+and a regular version based on Cherno. For large sample sizes the versions do agree,
+however, for small sample sizes the bootstrap-t has better covering rates, but a slightly
+higher variability in the estimate of the quantile than the simple version based on Cherno.}
 \usage{
-MultiplierBootstrap(R, params = NULL)
+MultiplierBootstrap(
+  R,
+  Q = NULL,
+  alpha = 0.05,
+  Mboots = 5000,
+  method = "t",
+  weights = "rademacher"
+)
 }
 \arguments{
-\item{R}{Array the last dimension enumerates the realizations of an residual field.}
+\item{R}{array of dimension K_1 x ... x K_D x N containing N-realizations of
+a random field over a D-dimensional domain.}
 
-\item{params}{list containing elements
-\itemize{
-  \item Mboots Numeric the amount of bootstrap replicates. Default is 5e3.
-  \item alpha Numeric the targeted upper quantile of the maxiumum of the absolute value of the random field. Default is 0.95.
-  \item method String the bootstrap version. Currently the options are "t" for the bootstrap-t and "regular". Default is "t".
-}}
+\item{Q}{array of dimension K_1 x ... x K_D x N containing N-realizations of
+a random field over a D-dimensional domain. Default NULL, i.e. one sample
+case.}
+
+\item{alpha}{numeric the targeted upper quantile of the maxiumum of the
+absolute value of the random field. Default is 0.95.}
+
+\item{Mboots}{numeric amount of bootstrap replicates. Default is 5e3.}
+
+\item{method}{string specifies the bootstrap version. Options are "t" and
+"regular". Default is "t".}
+
+\item{weights}{string specifying the multipliers. Options are "gaussian",
+"rademacher" and "mammen". Default is "rademacher".}
 }
 \value{
 list with elements
@@ -24,5 +45,10 @@ list with elements
 }
 }
 \description{
-Multiplier bootstrap estimator for the quantile of the maximum of a random field. The function contains a multiplier-t version based on Telschow Schwartzmann (2018) "Simultaneous confidence bands for non-parametric regression with functional data" and a regular version based on Cherno. For large sample sizes the versions do agree, however, for small sample sizes the bootstrap-t has better covering rates, but a slightly higher variability in the estimate of the quantile than the simple version based on Cherno.
+Multiplier bootstrap estimator for the quantile of the maximum of a random field. The
+function contains a multiplier-t version based on Telschow Schwartzmann (2019)
+"Simultaneous confidence bands for non-parametric regression with functional data"
+and a regular version based on Cherno. For large sample sizes the versions do agree,
+however, for small sample sizes the bootstrap-t has better covering rates, but a slightly
+higher variability in the estimate of the quantile than the simple version based on Cherno.
 }
