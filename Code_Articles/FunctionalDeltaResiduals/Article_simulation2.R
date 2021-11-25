@@ -16,7 +16,7 @@ Article_simulation2 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                                 path_wd = "~/Seafile/Projects/2019_DeltaResiduals/",
                                 date    = "YEAR_MO_DY",... ){
   # General constants
-  path_data <- paste(path_wd, "Schreibtisch/", sep = "")#"Workspaces/", sep = "")
+  path_data <- paste(path_wd, "Workspaces/", sep = "")
   x = seq(0, 1, length.out = x)
   #-------------------------------------------------------------------------------
   # General Simulation parameters
