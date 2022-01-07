@@ -24,10 +24,10 @@
 #' the moments contained in the order of transformation input.
 #' @return an array representing the delta residuals
 #' @export
-DeltaMomentResiduals <- function( Y,
-                                  transformation,
-                                  moments = NULL,
-                                  oracle  = NULL ){
+DeltaMomentResiduals <- function(Y,
+                                 transformation,
+                                 moments = NULL,
+                                 oracle  = NULL ){
   # Get the dimension of the field
   dimY     <- dim(Y)
   N.sample <- dimY[2]
@@ -51,11 +51,94 @@ DeltaMomentResiduals <- function( Y,
       transformation <- f ~ (mu4 - 4 * mu1 * mu3 + 6 * mu1^2 * mu2 - 3 * mu1^4) / (mu2 - mu1^2)^2 - 3
       moments <- c("mu1", "mu2", "mu3", "mu4")
     }else if( transformation == "kurtosis (unbiased)" ){
-      transformation <- f ~ (N.sample + 1) * (N.sample - 1) / (N.sample - 2) / (N.sample - 3) *
+      transformation <- as.formula(bquote(
+                          f ~ (.(N.sample) + 1) * (.(N.sample) - 1) / (.(N.sample) - 2) / (.(N.sample) - 3) *
                             (mu4 - 4 * mu1 * mu3 + 6 * mu1^2 * mu2 - 3 * mu1^4 ) /
                             (mu2 - mu1^2 )^2 -
-                            3 * (N.sample - 1)^2 / (N.sample - 2) / (N.sample - 3)
+                            3 * (.(N.sample) - 1)^2 / (.(N.sample) - 2) / (.(N.sample) - 3)
+                        ))
       moments <- c("mu1", "mu2", "mu3", "mu4")
+    }else if( transformation == "skewness (normality)"){
+      #---- Skewness transformation
+      m21     <- var_Gaussian("skewness", N.sample)
+      gamma21 <- gamma2_Gaussian("skewness", N.sample)
+
+      W2    <- sqrt(2 * gamma21 + 4) - 1
+      delta1 <- 1 / sqrt(log(sqrt(W2))) / sqrt(N.sample)
+      alpha <- sqrt(2 / (W2 - 1))
+
+      transformation <- as.formula(bquote(f ~ .(delta1) * log( ( mu3 - 3*mu2*mu1 + 2*mu1^3 ) /
+                                                      ( mu2 - mu1^2 )^(3/2) /
+                                                      sqrt(.(m21)) / .(alpha) +
+                                                      sqrt(  ( mu3 - 3*mu2*mu1 + 2*mu1^3 )^2 /
+                                                               ( mu2 - mu1^2 )^(3) /
+                                                               .(m21) / .(alpha^2) + 1) )))
+
+      moments <- c("mu1", "mu2", "mu3")
+    }else if(transformation == "kurtosis (normality)"){
+      # kurtosis transformation
+      m12 <- mean_Gaussian("kurtosis", N.sample)
+      m22 <- var_Gaussian("kurtosis", N.sample)
+      gamma12 <- gamma1_Gaussian("kurtosis", N.sample)
+
+      A <- 6 + 8 / gamma12 * (2 / gamma12 + sqrt(1 + 4 / gamma12^2))
+      delta2 <- sqrt(9 * A / 2 / N.sample)
+
+      transformation <- as.formula(bquote(f ~  .(delta2) * ((1 - 2 / 9 / .(A)) - ( (1 - 2 / .(A)) / (1 + ((mu4 - 4 * mu1 * mu3 + 6 * mu1^2 * mu2 - 3 * mu1^4) / (mu2 - mu1^2)^2 - .(m12))  / sqrt(.(m22)) * sqrt(2 / (.(A) - 4))) )^(1/3) )))
+
+      moments = c("mu1", "mu2", "mu3", "mu4")
+    }else if(transformation == "Ksquare"){
+      #---- Skewness transformation
+      m21     <- var_Gaussian("skewness", N.sample)
+      gamma21 <- gamma2_Gaussian("skewness", N.sample)
+      W2    <- sqrt(2 * gamma21 + 4) - 1
+      delta1 <- 1 / sqrt(log(sqrt(W2))) / sqrt(N.sample)
+      alpha <- sqrt(2 / (W2 - 1))
+
+      # kurtosis transformation
+      m12 <- mean_Gaussian("kurtosis", N.sample)
+      m22 <- var_Gaussian("kurtosis", N.sample)
+      gamma12 <- gamma1_Gaussian("kurtosis", N.sample)
+      A <- 6 + 8 / gamma12 * (2 / gamma12 + sqrt(1 + 4 / gamma12^2))
+      delta2 <- sqrt(9 * A / 2 / N.sample)
+
+      transformation <-  as.formula(bquote(f ~  .(delta2^2) * ((1 - 2 / 9 / .(A)) - ( (1 - 2 / .(A)) /
+                                                                             (1 + ((mu4 - 4 * mu1 * mu3 + 6 * mu1^2 * mu2 - 3 * mu1^4) /
+                                                                                     (mu2 - mu1^2)^2 - .(m12))  / sqrt(.(m22)) *
+                                                                                sqrt(2 / (.(A) - 4))) )^(1/3) )^2 +
+                                  .(delta1^2) * log( ( mu3 - 3*mu2*mu1 + 2*mu1^3 ) /
+                                                       ( mu2 - mu1^2 )^(3/2) /
+                                                       sqrt(.(m21)) / .(alpha) +
+                                                       sqrt(  ( mu3 - 3*mu2*mu1 + 2*mu1^3 )^2 /
+                                                                ( mu2 - mu1^2 )^(3) /
+                                                                .(m21) / .(alpha^2) + 1) )^2 ))
+      moments = c("mu1", "mu2", "mu3", "mu4")
+    }else if(transformation == "Ksquare (normality)"){
+      #---- Skewness transformation
+      m21     <- var_Gaussian("skewness", N.sample)
+      gamma21 <- gamma2_Gaussian("skewness", N.sample)
+      W2      <- sqrt(2 * gamma21 + 4) - 1
+      delta1  <- 1 / sqrt(log(sqrt(W2)))
+      alpha   <- sqrt(2 / (W2 - 1))
+
+      # kurtosis transformation
+      m12 <- mean_Gaussian("kurtosis", N.sample)
+      m22 <- var_Gaussian("kurtosis", N.sample)
+      gamma12 <- gamma1_Gaussian("kurtosis", N.sample)
+      A <- 6 + 8 / gamma12 * (2 / gamma12 + sqrt(1 + 4 / gamma12^2))
+      delta2 <- sqrt(9 * A / 2)
+      p = 3
+      transformation <-  as.formula(bquote(f ~  (((.(delta2^2) * ((1 - 2 / 9 / .(A)) - ( (1 - 2 / .(A)) /
+                                                                                        (1 + ((mu4 - 4 * mu1 * mu3 + 6 * mu1^2 * mu2 - 3 * mu1^4) /
+                                                                                                (mu2 - mu1^2)^2 - .(m12))  / sqrt(.(m22)) *
+                                                                                           sqrt(2 / (.(A) - 4))) )^(1/3) )^2 / 2 +
+                                             .(delta1^2) * log( ( mu3 - 3*mu2*mu1 + 2*mu1^3 ) /
+                                              ( mu2 - mu1^2 )^(3/2) /
+                                              sqrt(.(m21)) / .(alpha) +
+                                              sqrt(  ( mu3 - 3*mu2*mu1 + 2*mu1^3 )^2 /
+                                              ( mu2 - mu1^2 )^(3) /
+                                    .(m21) / .(alpha^2) + 1) )^2 / 2)^(1/.(p)) - (1 - 1 / .(p^2) )) / sqrt(.(N.sample) / .(p^2)) - 0) /  1 ))#0.01233952) /  0.9736893 ))
+      moments = c("mu1", "mu2", "mu3", "mu4")
     }
   }
 

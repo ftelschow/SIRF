@@ -179,6 +179,8 @@ scb_moments <- function(Y,
     }
   }else if(se.est == "exact gaussian"){
       se <- se_Gaussian(transformation, N, hatd = residuals$statistic)
+  }else{
+    se <- se.est / sqrt(N)
   }
 
   # Get the se estimate or use the true for Gaussian data
@@ -372,7 +374,7 @@ covering_scb <- function( Msim  = 5e4,
         }
       }
     }
-    #print(covRate)
+   # print(covRate)
   }
-  return( covRate )
+  return(list(rates = covRate, level = level))
 }

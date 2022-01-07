@@ -10,7 +10,174 @@
 # Developer notes:
 # - Style guideline NOT included
 #------------------------------------------------------------------------------#
-#' This functions computes the standard
+#' This functions computes the Wilson & Hilferty transform
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+WF_transform <- function(x, df = 2){
+  m  <- 1 - 2 / 9 / df
+  sd <- sqrt(2 / 9 / df)
+
+  ((x / df)^(1/3) - m) / sd
+}
+
+#' This functions computes the Wilson & Hilferty transform
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+Z1_transform <- function(g1, N){
+  m21     <- var_Gaussian("skewness", N)
+  gamma21 <- gamma2_Gaussian("skewness", N)
+
+  W2    <- sqrt(2 * gamma21 + 4) - 1
+  d <- 1 / sqrt(log(sqrt(W2))) / sqrt(N)
+  a <- sqrt(2 / (W2 - 1))
+
+  d * asinh(g1 / a / sqrt(m21))
+}
+
+#' This functions computes the Wilson & Hilferty transform
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+Z1_invtransform <- function(x, N){
+  m21     <- var_Gaussian("skewness", N)
+  gamma21 <- gamma2_Gaussian("skewness", N)
+
+  W2    <- sqrt(2 * gamma21 + 4) - 1
+  d <- 1 / sqrt(log(sqrt(W2))) / sqrt(N)
+  a <- sqrt(2 / (W2 - 1))
+
+  sinh(x / d) * a * sqrt(m21)
+}
+
+#' This functions computes the Wilson & Hilferty transform
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+Z2_transform <- function(g2, N){
+  m12 <- mean_Gaussian("kurtosis", N)
+  sd22 <- sqrt(var_Gaussian("kurtosis", N))
+  gamma12 <- gamma1_Gaussian("kurtosis", N)
+
+  A <- 6 + 8 / gamma12 * (2 / gamma12 + sqrt(1 + 4 / gamma12^2))
+  delta2 <- sqrt(9 * A / 2 / N)
+
+  sqrt(9 * A / 2) * (1 - 2 / 9 / A - ((1 - 2 / A) / (1 + (g2 - m12) / sd22 * sqrt(2 / (A - 4))  ))^(1/3))
+}
+
+#' This functions computes the Wilson & Hilferty transform
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+Z2_invtransform <- function(x, N){
+  m12 <- mean_Gaussian("kurtosis", N)
+  sd22 <- sqrt(var_Gaussian("kurtosis", N))
+  gamma12 <- gamma1_Gaussian("kurtosis", N)
+
+  A <- 6 + 8 / gamma12 * (2 / gamma12 + sqrt(1 + 4 / gamma12^2))
+  delta2 <- sqrt(9 * A / 2 / N)
+
+  ((1 - 2 / A) / (-x / sqrt(9 * A / 2) + (1 - 2 / 9 / A))^3 - 1) * sd22 / sqrt(2 / (A - 4)) + m12
+}
+
+#' This functions computes the values of Ksquare transformation under Gaussianity
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+Ksquare_Gaussian <- function(N){
+  #---- Skewness transformation
+  m21     <- 6 * (N - 2) / (N + 1) / (N + 3)
+  gamma21 <- 36 * (N - 7) * (N^2 + 2*N - 5) / ((N - 2) * (N + 5) * (N + 7) * (N + 9))
+
+  W2    <- sqrt(2 * gamma21 + 4) - 1
+  delta1 <- 1 / sqrt(log(sqrt(W2))) / sqrt(N)
+  alpha <- sqrt(2 / (W2 - 1))
+
+  #---- kurtosis transformation
+  m12 <- 3 * (N - 1) / (N + 1)
+  m22 <- 24 * N * (N - 2) * (N - 3) / (N + 1)^2 / (N + 3) / (N + 5)
+  gamma12 <- 6 * (N^2 - 5*N + 2) / (N + 7) / (N + 9) * sqrt(6 * (N + 3) * (N + 5) / N / (N - 2) / (N - 3))
+
+  A <- 6 + 8 / gamma12 * (2 / gamma12 + sqrt(1 + 4 / gamma12^2))
+  delta2 <- sqrt(9 * A / 2 / N)
+
+
+  #---- K2 transformation
+  K2 <- function(x,y){
+    delta2^2 * ((1 - 2 / 9 / A) - ( (1 - 2 / A) /
+                                      (1 + (y - m12)  / sqrt(m22) * sqrt(2 / (A - 4))) )^(1/3) )^2 +
+      delta1^2 * log( x /
+                        sqrt(m21) / alpha +
+                        sqrt(  x / m21 / alpha^2 + 1) )^2
+  }
+
+  K2(0,3)
+}
+
+#' This functions computes the true standard error depending on N for different
+#' functionals of Gaussians
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+mean_Gaussian <- function(transformation, N, hatd = NULL){
+  if(transformation == "cohensd"){
+    m <- NaN
+  }
+  else if(transformation == "skewness"){
+    m <- 0
+  }else if(transformation == "kurtosis"){
+    m <- 3 * (N - 1) / (N + 1)
+  }
+  return(m)
+}
+
+#' This functions computes the true standard error depending on N for different
+#' functionals of Gaussians
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+var_Gaussian <- function(transformation, N, hatd = NULL){
+  if(transformation == "cohensd"){
+    # sqrt(N)\hat d ~ non-central t with nc = sqrt(N)d, df = N-1
+    df = N - 1
+    nc = sqrt(N) * hatd
+
+    if( df < 320){
+      fac <- sqrt(df / 2) * gamma((df - 1) / 2) / gamma(df / 2)
+    }else{
+      fac <- 1 / (1 - 3 / (4 * df -1 ))
+    }
+
+    v <- ( df * (1 + nc^2) / (df - 2) - nc^2 * fac^2 )
+  }
+  else if(transformation == "skewness"){
+    v <- 6 * (N - 2) / (N + 1) / (N + 3)
+  }else if(transformation == "kurtosis"){
+    v <- 24 * N * (N - 2) * (N - 3) / (N + 1)^2 / (N + 3) / (N + 5)
+  }
+  return(v)
+}
+
+
+#' This functions computes the true standard error depending on N for different
+#' functionals of Gaussians
 #'
 #' @param transformation The considered transformation of the moments
 #' @param N Vector grid for evaluation of the smoothed field
@@ -35,6 +202,45 @@ se_Gaussian <- function(transformation, N, hatd = NULL){
     se <- sqrt(24 * N * (N - 2) * (N - 3) / (N + 1)^2 / (N + 3) / (N + 5))
   }
   return(se)
+}
+
+#' This functions computes the true standard error depending on N for different
+#' functionals of Gaussians
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+gamma1_Gaussian <- function(transformation, N, hatd = NULL){
+  if(transformation == "cohensd"){# sqrt(N)\hat d ~ non-central t with nc = sqrt(N)d, df = N-1
+    gamma1 <- NaN
+  }
+  else if(transformation == "skewness"){
+    gamma1 <- 0
+  }else if(transformation == "kurtosis"){
+    gamma1 <- 6 * (N^2 - 5*N + 2) / (N + 7) / (N + 9) *
+              sqrt(6 * (N + 3) * (N + 5) / N / (N - 2) / (N - 3))
+  }
+  return(gamma1)
+}
+
+#' This functions computes the true standard error depending on N for different
+#' functionals of Gaussians
+#'
+#' @param transformation The considered transformation of the moments
+#' @param N Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+gamma2_Gaussian <- function(transformation, N, hatd = NULL){
+  if(transformation == "cohensd"){# sqrt(N)\hat d ~ non-central t with nc = sqrt(N)d, df = N-1
+    gamma2 <- NaN
+  }
+  else if(transformation == "skewness"){
+    gamma2 <- 36 * (N - 7) * (N^2 + 2*N - 5) / ((N - 2) * (N + 5) * (N + 7) * (N + 9))
+  }else if(transformation == "kurtosis"){
+    gamma2 <- NaN
+  }
+  return(gamma2)
 }
 
 #' This functions computes the bias of certain transformations under Gaussianity
