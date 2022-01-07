@@ -80,17 +80,17 @@ ParametricBootstrap <- function( A,
   dimA = dim( A )
 
   # number of samples
-  N    = dimA[ length( dimA ) ]
-  D    = length( dimA ) - 1
+  N    = dimA[length(dimA)]
+  D    = length(dimA) - 1
 
   # Get the bootstrap weights. Note that COLUMNS are realizations of rmultinom!
-  counter = rmultinom( Mboots, size = N, prob = rep( 1 / N, N ) )
+  counter = rmultinom(Mboots, size = N, prob = rep(1 / N, N))
 
   #----- Switch by dimension for computational speed
   if( D == 1 ){
     # Bootstrapped and original means
     bootMeans <- A %*% counter / N
-    meanA     <- rowMeans( A )
+    meanA     <- rowMeans(A)
 
     # Estimate the variance from the sample
     if( method == "regular" ){
@@ -102,7 +102,8 @@ ParametricBootstrap <- function( A,
     }
 
     # Bootstrap realisations of the maximum of the t-field approximation
-    distVec <- sqrt( N ) * apply( abs( ( bootMeans - meanA ) / data.sigma ), 2, max )
+    distVec <- sqrt(N) * apply(abs((bootMeans - meanA) / data.sigma),
+                               2, max )
 
   }else if( D > 1 ){
     # Bootstrapped and original means
