@@ -103,3 +103,47 @@ png( pngname, width = 550, height = 450 )
 tmp + geom_line( data = tbl, aes(x = x, y = y), size = sLineMean ) + theme1 +
   ggtitle( "Model C" )
 dev.off()
+
+
+# Model A with observation noise
+mu_model    = function(x){sin(4 * pi * x) * exp(-3 * x)}
+sigma_model = function(x){((1 - x - 0.4)^2 + 1) / 6}
+noise_model = RandomNormalSum
+
+x = seq(0, 1, length.out = 50)
+
+Y1 <- SignalPlusNoise(N  = N,
+                      x  = x,
+                      mu = mu_model,
+                      noise = noise_model,
+                      sigma = sigma_model,
+                      obs.noise = 0.05)
+
+tmp = plot_RF(Y1, size.line = sLine)
+tbl = tibble(x = x, y = mu_model(x))
+
+# Plot the simulation results
+pngname <- paste( path_pics,
+                  "ModelA_Samples05.png",
+                  sep = "" )
+png( pngname, width = 550, height = 450 )
+tmp + geom_line( data = tbl, aes(x = x, y = y), size = sLineMean ) + theme1
+dev.off()
+
+Y1 <- SignalPlusNoise(N  = N,
+                      x  = x,
+                      mu = mu_model,
+                      noise = noise_model,
+                      sigma = sigma_model,
+                      obs.noise = 0.1)
+
+tmp = plot_RF(Y1, size.line = sLine)
+tbl = tibble(x = x, y = mu_model(x))
+
+# Plot the simulation results
+pngname <- paste( path_pics,
+                  "ModelA_Samples1.png",
+                  sep = "" )
+png( pngname, width = 550, height = 450 )
+tmp + geom_line( data = tbl, aes(x = x, y = y), size = sLineMean ) + theme1
+dev.off()
