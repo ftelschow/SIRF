@@ -8,7 +8,7 @@
 
 Article_simulation1 <- function(Model   = "ModelA", # "ModelB",  "ModelC"
                                 Msim    = 5e3, # number of simulations
-                                Nvec    = c(50, 100, 200, 400, 800), # sample sizes considered
+                                Nvec    = c(20, 50, 100, 200, 400, 800), # sample sizes considered
                                 x       = seq(0, 1, length.out = 150), # locations the process is evaluated at
                                 level   = .95,  # level of simultaneous control
                                 sim_tag = "",
