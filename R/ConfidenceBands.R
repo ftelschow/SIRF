@@ -172,7 +172,7 @@ scb_moments <- function(Y,
   }else if(se.est == "asymptotic gaussian"){
     if(transformation == "cohensd"){
       se <- sqrt(1 + residuals$statistic^2 / 2) / sqrt(N)
-    }else if( transformation == "skewness" ){
+    }else if(transformation == "skewness"){
       se <- 6 / sqrt(N)
     }else if(transformation %in% c("skewness", "kurtosis", "kurtosis (unbiased)")){
       se <- 24 / sqrt(N)
@@ -345,8 +345,21 @@ covering_scb <- function( Msim  = 5e4,
   rownames(covRate) <- Nvec
   colnames(covRate) <- names(method)
 
+  if(is.function(trueValue)){
+    trueValuef <- trueValue
+  }else{
+    trueValuef <- NULL
+  }
+
+  if(!is.na(as.numeric(se.est))){
+    se.est = as.numeric(se.est)
+  }
+
   # Monte Carlo simulation loop
   for( nn in 1:length(Nvec) ){
+    if(is.function(trueValuef)){
+      trueValue <- trueValuef(x, N)
+    }
     for( m in 1:Msim ){
       # Generate the data
       Y1 <- SignalPlusNoise( N  = Nvec[nn],
