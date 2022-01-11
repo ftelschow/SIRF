@@ -18,6 +18,7 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
   require(SIRF)
   require(tidyverse)
   require(SampleFields)
+  require(RFT)
 
   # General constants
   path_data <- paste( path_wd, "Workspaces/", sep = "" )
@@ -122,12 +123,10 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
       trueValue <- rep(0, length(x))
     }
   }
-    count = 0
-    cov <- list()
+
     for(bias.est.l in biasvec){
       for(se.est.l in se.est){
-        count = count + 1
-        cov[[count]] = covering_scb( Msim   = Msim,
+        cov = covering_scb( Msim   = Msim,
                             N      = Nvec,
                             level  = level,
                             method = methvec,
@@ -152,5 +151,4 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
                             sep = "" ) )
       }
     }
-  return(cov)
 }

@@ -1,5 +1,11 @@
 #!/bin/bash
-for parallel_count in {1..20}
+for parallel_count in {1..2}
 do
-	nohup Rscript --vanilla Sim_Script.R "ModelA" 500 $parallel_count "2021_11_19" "~/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/" &
+for model in "ModelA" "ModelB" "ModelC"
+do
+for transform in "skewness" "skewness (normality)" "kurtosis" "kurtosis (normality)"
+do
+	nohup Rscript --vanilla Sim_Script.R $model 500 $transform $parallel_count "2022_01_11" "~/test/" &
+done
+done
 done
