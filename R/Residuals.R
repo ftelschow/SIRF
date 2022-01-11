@@ -137,7 +137,7 @@ DeltaMomentResiduals <- function(Y,
                                               sqrt(.(m21)) / .(alpha) +
                                               sqrt(  ( mu3 - 3*mu2*mu1 + 2*mu1^3 )^2 /
                                               ( mu2 - mu1^2 )^(3) /
-                                    .(m21) / .(alpha^2) + 1) )^2 / 2)^(1/.(p)) - (1 - 1 / .(p^2) )) / sqrt(.(N.sample) / .(p^2)) - 0) /  1 ))#0.01233952) /  0.9736893 ))
+                                    .(m21) / .(alpha^2) + 1) )^2 / 2)^(1/3) - (1 - 1 / 9 )) / sqrt(.(N.sample) / 9)) ))#0.01233952) /  0.9736893 ))
       moments = c("mu1", "mu2", "mu3", "mu4")
     }
   }

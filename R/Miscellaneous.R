@@ -30,14 +30,18 @@ WF_transform <- function(x, df = 2){
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
 Z1_transform <- function(g1, N){
-  m21     <- var_Gaussian("skewness", N)
-  gamma21 <- gamma2_Gaussian("skewness", N)
+  if(is.infinite(N)){
+    asinh(g1 * 1.216675) * 0.3355443
+  }else{
+    m21     <- var_Gaussian("skewness", N)
+    gamma21 <- gamma2_Gaussian("skewness", N)
 
-  W2    <- sqrt(2 * gamma21 + 4) - 1
-  d <- 1 / sqrt(log(sqrt(W2))) / sqrt(N)
-  a <- sqrt(2 / (W2 - 1))
+    W2 <- sqrt(2 * gamma21 + 4) - 1
+    d  <- 1 / sqrt(log(sqrt(W2))) / sqrt(N)
+    a  <- sqrt(2 / (W2 - 1))
 
-  d * asinh(g1 / a / sqrt(m21))
+    d * asinh(g1 / a / sqrt(m21))
+  }
 }
 
 #' This functions computes the Wilson & Hilferty transform
@@ -64,14 +68,22 @@ Z1_invtransform <- function(x, N){
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
 Z2_transform <- function(g2, N){
-  m12 <- mean_Gaussian("kurtosis", N)
-  sd22 <- sqrt(var_Gaussian("kurtosis", N))
-  gamma12 <- gamma1_Gaussian("kurtosis", N)
+  sq3 <- function(x){
+    ifelse(x > 0, x^(1/3), -(-x)^(1/3))
+  }
 
-  A <- 6 + 8 / gamma12 * (2 / gamma12 + sqrt(1 + 4 / gamma12^2))
-  delta2 <- sqrt(9 * A / 2 / N)
+  if(N == Inf){
+    return(0.8164966 * (1 - sq3(1 / (1 + (g2 - 3) * 0.75)  ) ))
+  }else{
+    m12 <- mean_Gaussian("kurtosis", N)
+    sd22 <- sqrt(var_Gaussian("kurtosis", N))
+    gamma12 <- gamma1_Gaussian("kurtosis", N)
 
-  sqrt(9 * A / 2) * (1 - 2 / 9 / A - ((1 - 2 / A) / (1 + (g2 - m12) / sd22 * sqrt(2 / (A - 4))  ))^(1/3))
+    A <- 6 + 8 / gamma12 * (2 / gamma12 + sqrt(1 + 4 / gamma12^2))
+    d2 <- sqrt(9 * A / 2 / N)
+
+    return(d2 * (1 - 2 / 9 / A - sq3((1 - 2 / A) / (1 + (g2 - m12) / sd22 * sqrt(2 / (A - 4))  ) )))
+  }
 }
 
 #' This functions computes the Wilson & Hilferty transform
@@ -86,9 +98,9 @@ Z2_invtransform <- function(x, N){
   gamma12 <- gamma1_Gaussian("kurtosis", N)
 
   A <- 6 + 8 / gamma12 * (2 / gamma12 + sqrt(1 + 4 / gamma12^2))
-  delta2 <- sqrt(9 * A / 2 / N)
+  d2 <- sqrt(9 * A / 2 / N)
 
-  ((1 - 2 / A) / (-x / sqrt(9 * A / 2) + (1 - 2 / 9 / A))^3 - 1) * sd22 / sqrt(2 / (A - 4)) + m12
+  ((1 - 2 / A) / (-x / d2 + (1 - 2 / 9 / A))^3 - 1) * sd22 / sqrt(2 / (A - 4)) + m12
 }
 
 #' This functions computes the values of Ksquare transformation under Gaussianity
