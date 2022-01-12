@@ -99,6 +99,7 @@ plot_scb <- function(x, scb, scb2 = NULL, true = NULL, s1name = "est Sample1",
 plot_covSim <- function(covSim, title = "", legend.position = "none"){
   lvl      <- covSim$level
   covRates <- covSim$rates
+  Msim     <- covSim$Msim
 
   target <- sqrt( lvl * ( 1 - lvl ) / Msim ) * c(-qnorm(lvl/2 + 1/2), 0, qnorm(lvl/2 + 1/2)) + lvl
   xLab <- rownames(covRates)
