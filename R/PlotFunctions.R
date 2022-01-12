@@ -56,7 +56,7 @@ plot_scb <- function(x, scb, scb2 = NULL, true = NULL, s1name = "est Sample1",
                   axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
                   axis.title.x = element_text(color = "black", size = sText, face = "plain"),
                   axis.title.y = element_text(color = "black", size = sText, face = "plain"))
-
+  X11()
   if(is.null(true) & is.null(scb2)){
     ggplot(data) +
       geom_line(aes(x = x, y = est, col = s1name), size = 1.2) +
