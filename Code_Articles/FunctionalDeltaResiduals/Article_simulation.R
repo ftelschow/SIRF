@@ -97,11 +97,11 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
     }else if(transformation == "kurtosis"){
       trueValue = kurtV
     }else if(transformation == "kurtosis (normality)"){
-      trueValue = Z2_transform(kurtV, Inf)
+      trueValue = Z2_transform(kurtV + 3, Inf)
     }else if(transformation == "Ksquare"){
       trueValue = Z2_transform(kurtV, Inf)^2 + Z1_transform(skewV, Inf)^2
     }else if(transformation == "Ksquare (normality)"){
-      trueValue =  WF_transform(Z2_transform(kurtV, Inf)^2 + Z1_transform(skewV, Inf)^2)
+      trueValue =  WF_transform(Z2_transform(kurtV + 3, Inf)^2 + Z1_transform(skewV, Inf)^2)
     }
 
   }else{
