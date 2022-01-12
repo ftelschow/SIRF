@@ -39,7 +39,6 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
                  Mult = Mult, tMult = tMult,
                  rMult = rMult, trMult = trMult )
   #methvec = list( GKF = GKF )
-  methvec = list( tGKF = tGKF )
 
   if(transformation %in% c("skewness", "kurtosis", "cohensd")){
     se.est <- c("estimate", "exact gaussian")
