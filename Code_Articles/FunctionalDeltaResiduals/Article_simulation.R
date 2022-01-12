@@ -29,7 +29,7 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
   #-------------------------------------------------------------------------------
   # Describing the parameters of the compared methods
   GKF    = list( name = "GKF", field = "z" )
-  tGKF   = list( name = "tGKF", field = "t" )
+  tGKF   = list( name = "GKF", field = "t" )
   Mult   = list( name = "MultBoot", Mboots = 5e3, weights = "gaussian", method = "regular" )
   tMult  = list( name = "MultBoot", Mboots = 5e3, weights = "gaussian", method = "t"  )
   rMult  = list( name = "MultBoot", Mboots = 5e3, weights = "rademacher", method = "regular"  )
@@ -39,6 +39,7 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
                  Mult = Mult, tMult = tMult,
                  rMult = rMult, trMult = trMult )
   #methvec = list( GKF = GKF )
+  methvec = list( tGKF = tGKF )
 
   if(transformation %in% c("skewness", "kurtosis", "cohensd")){
     se.est <- c("estimate", "exact gaussian")
