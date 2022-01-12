@@ -13,7 +13,8 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
                                level   = .95,  # level of simultaneous control
                                sim_tag = "",
                                path_wd = "~/Seafile/Projects/2019_DeltaResiduals/",
-                               date    = "YEAR_MO_DY",... ){
+                               date    = "YEAR_MO_DY",
+                               print_flag = F,... ){
   # Load packages
   require(SIRF)
   require(tidyverse)
@@ -65,7 +66,7 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
     noise_model = function(N, x){ ArbCovProcess( N, x, covf = covf ) }
 
     if(transformation == "cohensd"){
-      mu_model(x) / sigma_model(x) / vapply(x, function(x) sqrt(covf(x,x)), 1)
+      trueValue <- mu_model(x) / sigma_model(x) / vapply(x, function(x) sqrt(covf(x,x)), 1)
     }else if(transformation %in% c("skewness",
                                    "skewness (normality)",
                                    "kurtosis",
@@ -85,7 +86,7 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
     g <- function(x) 2 / 3 * (x - 0.5)#
 
     if(transformation == "cohensd"){
-      mu_model(x) / sigma_model(x)
+      trueValue <- mu_model(x) / sigma_model(x)
     }else if(transformation == "skewness"){
       trueValue <- (8 * f(x)^3 + 2 * g(x)^3) / (2 * f(x)^2 + g(x)^2)^(3/2)
     }else if(transformation == "skewness (normality)"){
@@ -112,7 +113,7 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
     noise_model = RandomNormalSum
 
     if(transformation == "cohensd"){
-      mu_model(x) / sigma_model(x)
+      trueValue <- mu_model(x) / sigma_model(x)
     }else if(transformation %in% c("skewness",
                                       "skewness (normality)",
                                       "kurtosis",
@@ -138,6 +139,9 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
                             bias.est = bias.est.l,
                             se.est   = se.est.l,
                             trueValue = trueValue )
+        if(print_flag){
+          print(cov$rates)
+        }
         save( list = c("cov", "Msim", "Nvec", "level", "methvec", "x", "mu_model", "sigma_model",
                        "noise_model", "transformation", "bias.est.l", "se.est.l", "trueValue"),
               file = paste( path_data,
