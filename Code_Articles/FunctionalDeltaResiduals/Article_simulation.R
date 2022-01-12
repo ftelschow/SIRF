@@ -84,27 +84,24 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
 
     f <- function(x) sqrt(2) / 6 * sin(pi * x)
     g <- function(x) 2 / 3 * (x - 0.5)#
+    skewV <- (8 * f(x)^3 + 2 * g(x)^3) / (2 * f(x)^2 + g(x)^2)^(3/2)
+    kurtV <- (60 * f(x)^4 + 12 * f(x)^2 * g(x)^2  + 9 * g(x)^4) /
+                                                  (2 * f(x)^2 + g(x)^2)^2 - 3
 
     if(transformation == "cohensd"){
       trueValue <- mu_model(x) / sigma_model(x)
     }else if(transformation == "skewness"){
-      trueValue <- (8 * f(x)^3 + 2 * g(x)^3) / (2 * f(x)^2 + g(x)^2)^(3/2)
+      trueValue <- skewV
     }else if(transformation == "skewness (normality)"){
-      trueValue <- Z1_transform((8 * f(x)^3 + 2 * g(x)^3) / (2 * f(x)^2 + g(x)^2)^(3/2), Inf)
+      trueValue <- Z1_transform(skewV, Inf)
     }else if(transformation == "kurtosis"){
-      trueValue = (60 * f(x)^4 + 12 * f(x)^2 * g(x)^2  + 9 * g(x)^4) /
-                      (2 * f(x)^2 + g(x)^2)^2
+      trueValue = kurtV
     }else if(transformation == "kurtosis (normality)"){
-      trueValue = Z2_transform((60 * f(x)^4 + 12 * f(x)^2 * g(x)^2  + 9 * g(x)^4) /
-                      (2 * f(x)^2 + g(x)^2)^2, Inf)
+      trueValue = Z2_transform(kurtV, Inf)
     }else if(transformation == "Ksquare"){
-      trueValue = Z2_transform((60 * f(x)^4 + 12 * f(x)^2 * g(x)^2  + 9 * g(x)^4) /
-                                 (2 * f(x)^2 + g(x)^2)^2, Inf)^2 +
-        Z1_transform((8 * f(x)^3 + 2 * g(x)^3) / (2 * f(x)^2 + g(x)^2)^(3/2), Inf)^2
+      trueValue = Z2_transform(kurtV, Inf)^2 + Z1_transform(skewV, Inf)^2
     }else if(transformation == "Ksquare (normality)"){
-      trueValue =  WF_transform(Z2_transform((60 * f(x)^4 + 12 * f(x)^2 * g(x)^2  + 9 * g(x)^4) /
-                                  (2 * f(x)^2 + g(x)^2)^2, Inf)^2 +
-        Z1_transform((8 * f(x)^3 + 2 * g(x)^3) / (2 * f(x)^2 + g(x)^2)^(3/2), Inf)^2)
+      trueValue =  WF_transform(Z2_transform(kurtV, Inf)^2 + Z1_transform(skewV, Inf)^2)
     }
 
   }else{
