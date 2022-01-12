@@ -351,7 +351,7 @@ covering_scb <- function( Msim  = 5e4,
     trueValuef <- NULL
   }
 
-  if(!is.na(as.numeric(se.est))){
+  if(suppressWarnings(!is.na(as.numeric(se.est)))){
     se.est = as.numeric(se.est)
   }
 
