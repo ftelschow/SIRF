@@ -2,10 +2,10 @@
 args = commandArgs(trailingOnly = TRUE)
 
 # Load packages
-library(SIRF)
-library(SampleFields)
-library(RFT)
-library(tidyverse)
+suppressPackageStartupMessages(library(SIRF))
+suppressPackageStartupMessages(library(SampleFields))
+suppressPackageStartupMessages(library(RFT))
+suppressPackageStartupMessages(library(tidyverse))
 
 # Get the working directory
 path_wd = args[6]
