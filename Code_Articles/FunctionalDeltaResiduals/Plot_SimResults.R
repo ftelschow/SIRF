@@ -1,133 +1,121 @@
-#
+# Clear workspace
+rm( list = ls() )
 
-# Load packages
-library(SIRF)
-library( SampleFields )
+# Required packages
+require(RFT)
+require(SampleFields)
+require(tidyverse)
+require(gaussplotR)
+require(fields)
+require(reshape2)
 
 #
-path_wd   <- "/home/fabian/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/"
-path_pics <- "/home/fabian/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/Pics/"
+path_wd   <- "~/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/"
+path_data <- "~/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/Workspaces/"
+path_pics <- "~/Seafile/Projects/2019_DeltaResiduals/Article/Figures/"
+
 # Set the working path
 setwd(path_wd)
 
 # Get the simulation file from source
-source(paste(path_wd, "Plot_Functions.R", sep = ""))
+#source(paste(path_wd, "Workspaces/Variance_Simulation.Rdata", sep = ""))
 
-# Define the simulation parameters
-
-Modelvec = "ModelC"#c("ModelA", "ModelB", "ModelC")
-
-date   = "2021_11_15"
+date  = "2022_01_11"
 simMax = 20
 
-for(model in Modelvec){
-  if( model == "ModelC" ){
-    transformationvec = c("cohensd",
-                          "cohensd",
-                          "skewness",
-                          "skewness")
+for(Model in c("ModelA", "ModelB", "ModelC") ){
+  for(transformation in c("skewness", "skewness (normality)", "kurtosis", "kurtosis (normality)")){
 
-    se.est <- c(TRUE,
-                TRUE,
-                TRUE,
-                TRUE)
+      if(transformation %in% c("skewness", "kurtosis", "cohensd")){
+        se.est <- c("estimate", "exact gaussian")
+      }else if(transformation %in% c("skewness (normality)",
+                                     "kurtosis (normality)",
+                                     "Ksquare (normality)")){
+        se.est <- c("estimate", 1)
+      }else if(transformation == "Ksquare"){
+        se.est <- c("estimate", 2)
+      }
 
-    biasvec = c(TRUE,
-                FALSE,
-                TRUE,
-                FALSE)
-  }else{
-    transformationvec = c("cohensd",
-                          "cohensd",
-                          "cohensd",
-                          "cohensd",
-                          "skewness",
-                          "skewness",
-                          "skewness")
+      biasvec = c("asymptotic gaussian", "estimate")
 
-    se.est <- c(TRUE,
-                TRUE,
-                FALSE,
-                FALSE,
-                TRUE,
-                TRUE,
-                FALSE)
-
-    biasvec = c(TRUE,
-                FALSE,
-                TRUE,
-                FALSE,
-                TRUE,
-                FALSE,
-                FALSE)
-  }
-
-  for(l in 1:length(transformationvec)){
-    transformation.l = transformationvec[l]
-    bias.l = biasvec[l]
-    se.est.l = se.est[l]
-
-    for(n in 1:simMax){
-      # Simulate the covering rate
-      load( file = paste( paste(path_wd, "Workspaces/",sep = ""),
-                          date, "_",
-                          model, "_",
-                          transformation.l,
-                          "_bias_", bias.l,
-                          "_se.est_", se.est.l,
-                          "_", n,
-                          ".rdata",
-                          sep = "" ) )
-      if(n == 1){
-        covAll  <- cov
-        MsimAll <- Msim
+      if( transformation == "skewness" ){
+        ylow = 0.75
+        yup  = 1
       }else{
-        covAll  <- covAll + cov
-        MsimAll <- MsimAll + Msim
+        ylow = 0.85
+        yup  = 1
+      }
+
+      #-------------------------------------------------------------------------------
+      sLegend <- 25
+      sText   <- 25
+      Sylab = 1.5
+      Sxlab = 1.5
+      sLine = 1.5
+      sPch = 4
+
+      theme1 <- theme(legend.position = "none",
+                      plot.title   = element_text(face = "bold", size = sText),
+                      axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
+                      axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
+                      axis.title.x = element_text(color = "black", size = sText, face = "plain"),
+                      axis.title.y = element_text(color = "black", size = sText, face = "plain"))
+
+      theme2 <- theme(legend.title = element_blank(),
+                      legend.position = c(0.82, 0.3),
+                      legend.key.size = unit(1.1, 'cm'),
+                      legend.text = element_text(size = sLegend),
+                      plot.title   = element_text(face = "bold", size = sText),
+                      axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
+                      axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
+                      axis.title.x = element_text(color = "black", size = sText, face = "plain"),
+                      axis.title.y = element_text(color = "black", size = sText, face = "plain"))
+
+
+      #-------------------------------------------------------------------------------
+      #  Concatinate and plot
+      #-------------------------------------------------------------------------------
+      for(bias.est.l in biasvec){
+        for(se.est.l in se.est){
+          sim_Name <- paste(Model, "_",
+                            gsub(" ", "_", transformation),
+                            "_bias_", gsub(" ", "_", bias.est.l),
+                            "_se.est_", gsub(" ", "_", se.est.l), sep = "")
+
+          for(sim_tag in 1:simMax){
+            # Simulate the covering rate
+            load( file = paste( path_data,
+                                date, "_",
+                                sim_Name,
+                                "_", sim_tag,
+                                ".rdata",
+                                sep = "" ) )
+            if(sim_tag == 1){
+              covAll      <- cov
+              covAll$Msim <- Msim
+            }else{
+              covAll$rates <- covAll$rates + cov$rates
+              covAll$Msim  <- covAll$Msim + Msim
+            }
+          }
+          cov$rates <- covAll$rates / simMax
+          cov$Msim  <- covAll$Msim
+
+          # Save the concatinated data
+          save( list = c("cov", "Msim", "level"),
+                file = paste( path_data,
+                            date, "_",
+                            sim_Name,
+                            "_ALL.rdata",
+                            sep = "" ) )
+
+          # Plot the data
+          pngname <- paste( path_pics, sim_Name, ".png", sep = "" )
+          png( pngname, width = 550, height = 450 )
+          plot_covSim(cov, title = "", legend.position = "none")
+          dev.off()
+        }
       }
   }
-  covAll <- covAll / simMax
-  colnames(covAll) <- c("GKF", "tGKF", "gMult", "tgMult", "rMult", "rtMult")
-
-  # Plot the simulation results
-  pngname <- paste( path_pics,
-                    model, "_",
-                    transformation.l,
-                    "_bias_", bias.l,
-                    "_se.est_", se.est.l,
-                    ".png",
-                    sep = "" )
-  covRates = covAll
-  Msim     = MsimAll
-  lvl      = level
-  title = "Simultaneous Confidence Bands"
-  png( pngname, width = 550, height = 450 )
-  target <- sqrt( lvl * ( 1 - lvl ) / Msim ) * c(-qnorm(lvl/2 + 1/2), 0, qnorm(lvl/2 + 1/2)) + lvl
-  xLab <- rownames(covRates)
-  yLab <- colnames(covRates)
-  covs <- as_tibble(covRates, rownames = "N") %>%
-    melt(., id.vars = "N", variable = "Method", value.name = "CovRate") %>%
-    as_tibble() %>% mutate_if(is.character, as.numeric)
-
-  # Plot the Covering Rates by Method
-  print( ggplot(covs, aes(N, CovRate, group = Method, col = Method)) +
-    geom_point() + geom_line() +
-    xlab( "Sample Size [N]" ) + ylab( "Covering Rate" ) +
-    ggtitle( title ) +
-    geom_hline( yintercept = target[2] ) +
-    geom_hline( yintercept = target[1], linetype = "dashed" ) +
-    geom_hline( yintercept = target[3], linetype = "dashed" ) )
-  dev.off()
-
-  # Save the concatinated data
-  save( list = c("covRates", "Msim", "lvl"), file = paste( paste(path_wd, "Workspaces/",sep = ""),
-                      date, "_",
-                      model, "_",
-                      transformation.l,
-                      "_bias_", bias.l,
-                      "_se.est_", se.est.l,
-                      "_full",
-                      ".rdata",
-                      sep = "" ) )
-}}
+}
 
