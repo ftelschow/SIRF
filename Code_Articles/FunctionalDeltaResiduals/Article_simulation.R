@@ -127,6 +127,11 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
 
     for(bias.est.l in biasvec){
       for(se.est.l in se.est){
+        sim_Name <- paste(Model, "_",
+                          gsub( "[()]", "", gsub(" ", "_", transformation)),
+                          "_bias_", gsub(" ", "", bias.est.l),
+                          "_seEst_", gsub(" ", "_", se.est.l), sep = "")
+
         cov = covering_scb( Msim   = Msim,
                             N      = Nvec,
                             level  = level,
@@ -146,10 +151,7 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
                        "noise_model", "transformation", "bias.est.l", "se.est.l", "trueValue"),
               file = paste( path_data,
                             date, "_",
-                            Model, "_",
-                            gsub(" ", "_", transformation),
-                            "_bias_", gsub(" ", "_", bias.est.l),
-                            "_se.est_", gsub(" ", "_", se.est.l),
+                            sim_Name,
                             "_", sim_tag,
                             ".rdata",
                             sep = "" ) )

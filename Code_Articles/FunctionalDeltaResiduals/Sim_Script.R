@@ -27,11 +27,11 @@ source(paste(path_wd, "Article_simulation.R", sep = ""))
 
 # Simulate the covering rate
 Article_simulation( Model   = args[1], # "ModelA", "ModelB", "ModelC"
-                     Msim    = as.numeric(args[2]), # number of simulations
-                     transformation = transform, # Transformation
-                     Nvec    = c( 50, 100, 200, 400, 800 ), # sample sizes considered
-                     x       = seq( 0, 1, length.out = 150 ), # locations the process is evaluated at
-                     level   = .95,  # level of simultaneous control
-                     sim_tag = args[4],
-                     path_wd = path_wd,
-                     date    = args[5] )
+                    Msim    = as.numeric(args[2]), # number of simulations
+                    transformation = transform, # Transformation
+                    Nvec    = c( 50, 100, 200, 400, 800 ), # sample sizes considered
+                    x       = seq( 0, 1, length.out = 150 ), # locations the process is evaluated at
+                    level   = .95,  # level of simultaneous control
+                    sim_tag = args[4],
+                    path_wd = path_wd,
+                    date    = args[5] )

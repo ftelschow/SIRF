@@ -1,8 +1,9 @@
 # Clear workspace
-rm( list = ls() )
+rm(list = ls())
 
 # Required packages
 require(RFT)
+require(SIRF)
 require(SampleFields)
 require(tidyverse)
 require(gaussplotR)
@@ -12,7 +13,7 @@ require(reshape2)
 #
 path_wd   <- "~/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/"
 path_data <- "~/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/Workspaces/"
-path_pics <- "~/Seafile/Projects/2019_DeltaResiduals/Article/Figures/"
+path_pics <- "~/Seafile/Code/Rpackages/SIRF/Code_Articles/FunctionalDeltaResiduals/Pics/"
 
 # Set the working path
 setwd(path_wd)
@@ -78,9 +79,9 @@ for(Model in c("ModelA", "ModelB", "ModelC") ){
       for(bias.est.l in biasvec){
         for(se.est.l in se.est){
           sim_Name <- paste(Model, "_",
-                            gsub(" ", "_", transformation),
-                            "_bias_", gsub(" ", "_", bias.est.l),
-                            "_se.est_", gsub(" ", "_", se.est.l), sep = "")
+                            gsub( "[()]", "", gsub(" ", "_", transformation)),
+                            "_bias_", gsub(" ", "", bias.est.l),
+                            "_seEst_", gsub(" ", "_", se.est.l), sep = "")
 
           for(sim_tag in 1:simMax){
             # Simulate the covering rate
