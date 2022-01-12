@@ -16,10 +16,10 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
                                date    = "YEAR_MO_DY",
                                print_flag = F,... ){
   # Load packages
-  require(SIRF)
-  require(tidyverse)
-  require(SampleFields)
-  require(RFT)
+  suppressPackageStartupMessages(require(SIRF))
+  suppressPackageStartupMessages(require(tidyverse))
+  suppressPackageStartupMessages(require(SampleFields))
+  suppressPackageStartupMessages(require(RFT))
 
   # General constants
   path_data <- paste( path_wd, "Workspaces/", sep = "" )
