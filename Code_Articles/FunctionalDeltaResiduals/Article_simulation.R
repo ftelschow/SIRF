@@ -35,10 +35,10 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
   rMult  = list( name = "MultBoot", Mboots = 5e3, weights = "rademacher", method = "regular"  )
   trMult = list( name = "MultBoot", Mboots = 5e3, weights = "rademacher", method = "t"  )
 
-  #methvec = list(GKF = GKF, tGKF = tGKF,
-  #               Mult = Mult, tMult = tMult,
-  #               rMult = rMult, trMult = trMult )
-  methvec = list( GKF = GKF )
+  methvec = list(GKF = GKF, tGKF = tGKF,
+                 Mult = Mult, tMult = tMult,
+                 rMult = rMult, trMult = trMult )
+  #methvec = list( GKF = GKF )
 
   if(transformation %in% c("skewness", "kurtosis", "cohensd")){
     se.est <- c("estimate", "exact gaussian")
