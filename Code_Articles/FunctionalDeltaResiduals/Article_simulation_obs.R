@@ -21,10 +21,10 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
   suppressPackageStartupMessages(require(tidyverse))
   suppressPackageStartupMessages(require(SampleFields))
   suppressPackageStartupMessages(require(RFT))
-  
+
   # General constants
   path_data <- paste( path_wd, "Workspaces/", sep = "" )
-  
+
   #-------------------------------------------------------------------------------
   # General Simulation parameters
   #-------------------------------------------------------------------------------
@@ -35,9 +35,9 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
   tMult  = list( name = "MultBoot", Mboots = 5e3, weights = "gaussian", method = "t"  )
   rMult  = list( name = "MultBoot", Mboots = 5e3, weights = "rademacher", method = "regular"  )
   trMult = list( name = "MultBoot", Mboots = 5e3, weights = "rademacher", method = "t"  )
-  
+
   methvec = list(GKF = GKF, Mult = Mult)
-  
+
   if(transformation %in% c("skewness", "kurtosis", "cohensd")){
     se.est <- c("estimate", "exact gaussian")
   }else if(transformation %in% c("skewness (normality)",
@@ -47,22 +47,22 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
   }else if(transformation == "Ksquare"){
     se.est <- c("estimate", 2)
   }
-  
-  
+
+
   biasvec = c("asymptotic gaussian", "estimate")
-  
+
   #-------------------------------------------------------------------------------
   # Models
   #-------------------------------------------------------------------------------
   if( Model == "ModelB" ){
     mu_model    = function(x){ ( x - 0.3 )^2 }
     sigma_model = function(x){ (sin(3 * pi * x) + 1.5) / 6 }
-    
+
     covf <- function(x, y) SampleFields::covf.nonst.matern(x,
                                                            y,
                                                            params = c( 1, 1 / 4, 0.4 ))
     noise_model = function(N, x){ ArbCovProcess( N, x, covf = covf ) }
-    
+
     if(transformation == "cohensd"){
       trueValue <- mu_model(x) / sigma_model(x) / vapply(x, function(x) sqrt(covf(x,x)), 1)
     }else if(transformation %in% c("skewness",
@@ -74,18 +74,18 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
     )){
       trueValue <- rep(0, length(x))
     }
-    
+
   }else if( Model == "ModelC" ){
     mu_model    = function(x){sin(4 * pi * x) * exp(-3 * x)}
     sigma_model = function(x){(1.5 - x)}
     noise_model = DegrasNonGaussProcess
-    
+
     f <- function(x) sqrt(2) / 6 * sin(pi * x)
     g <- function(x) 2 / 3 * (x - 0.5)#
     skewV <- (8 * f(x)^3 + 2 * g(x)^3) / (2 * f(x)^2 + g(x)^2)^(3/2)
     kurtV <- (60 * f(x)^4 + 12 * f(x)^2 * g(x)^2  + 9 * g(x)^4) /
       (2 * f(x)^2 + g(x)^2)^2 - 3
-    
+
     if(transformation == "cohensd"){
       trueValue <- mu_model(x) / sigma_model(x)
     }else if(transformation == "skewness"){
@@ -101,12 +101,12 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
     }else if(transformation == "Ksquare (normality)"){
       trueValue =  WF_transform(Z2_transform(kurtV + 3, Inf)^2 + Z1_transform(skewV, Inf)^2)
     }
-    
+
   }else{
     mu_model    = function(x){sin(4 * pi * x) * exp(-3 * x)}
     sigma_model = function(x){((1 - x - 0.4)^2 + 1) / 6}
     noise_model = RandomNormalSum
-    
+
     if(transformation == "cohensd"){
       trueValue <- mu_model(x) / sigma_model(x)
     }else if(transformation %in% c("skewness",
@@ -119,13 +119,15 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
       trueValue <- rep(0, length(x))
     }
   }
-  
+
   for(bias.est.l in biasvec){
     for(se.est.l in se.est){
       sim_Name <- paste(Model, "_",
                         gsub( "[()]", "", gsub(" ", "_", transformation)),
                         "_bias_", gsub(" ", "", bias.est.l),
-                        "_seEst_", gsub(" ", "_", se.est.l), sep = "")
+                        "_seEst_", gsub(" ", "_", se.est.l),
+                        "_x_", length(x),
+                        "_obs_", obs, sep = "")
       cov = covering_scb( Msim   = Msim,
                           N      = Nvec,
                           level  = level,
