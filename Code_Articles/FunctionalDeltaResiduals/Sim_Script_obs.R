@@ -10,8 +10,6 @@ suppressPackageStartupMessages(library(tidyverse))
 # Get the working directory
 path_wd = args[7]
 
-print(path_wd)
-
 # Set the working path
 setwd(path_wd)
 
