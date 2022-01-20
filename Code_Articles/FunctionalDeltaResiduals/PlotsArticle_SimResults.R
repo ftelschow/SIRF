@@ -15,94 +15,145 @@ path_pics <- "~/Seafile/Projects/2019_DeltaResiduals/Article/Figures/"
 # Set the working path
 setwd(path_wd)
 
-# Get the simulation file from source
-#source(paste(path_wd, "Workspaces/Variance_Simulation.Rdata", sep = ""))
+date  = "2022_01_11"
 
-date  = "2021_11_15"
-model = "ModelC" #  "ModelA" #  "ModelC" #
-transformation.l ="cohensd" #  "skewness" #
+#-------------------------------------------------------------------------------
+plot_covResults <- function(model, transformation, bias.l, se.est.l, legend.on = FALSE){
+  sim_Name <- paste(model, "_",
+                    gsub( "[()]", "", gsub(" ", "_", transformation)),
+                    "_bias_", gsub(" ", "", bias.l),
+                    "_seEst_", gsub(" ", "_", se.est.l), sep = "")
 
-if( transformation.l == "skewness" ){
-  ylow = 0.75
-  yup  = 1
-}else{
-  ylow = 0.85
-  yup  = 1
+  if(bias.l == "asymptotic gaussian"){
+    title = "No Bias correction,"
+  }else{
+    title = "Bias correction,"
+  }
+
+  if(se.est.l == "exact gaussian"){
+    title = paste(title, "Gaussian variance")
+  }else if(se.est.l == "1"){
+    title = paste(title, "Gaussian variance")
+  }else{
+    title = paste(title, "Estimated variance")
+  }
+
+  if( transformation %in% c("kurtosis", "kurtosis (normality)") ){
+    ylow = 0.65
+    yup  = 1
+    if(model == "ModelC"){
+      ylow = 0.4
+      yup  = 1
+    }
+  }else if( transformation %in% c("skewness", "skewness (normality)") ){
+    ylow = 0.8
+    yup  = 1
+    if(model == "ModelC"){
+      ylow = 0.4
+      yup  = 1
+    }
+  }else{
+    ylow = 0.85
+    yup  = 1
+  }
+
+  sLegend <- 25
+  sText   <- 25
+  Sylab = 1.5
+  Sxlab = 1.5
+  sLine = 1.5
+  sPch = 4
+
+  theme1 <- theme(legend.position = "none",
+                  plot.title   = element_text(face = "bold", size = sText),
+                  axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
+                  axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
+                  axis.title.x = element_text(color = "black", size = sText, face = "plain"),
+                  axis.title.y = element_text(color = "black", size = sText, face = "plain"))
+
+  theme2 <- theme(legend.title = element_blank(),
+                  legend.position = c(0.82, 0.3),
+                  legend.key.size = unit(1.1, 'cm'),
+                  legend.text = element_text(size = sLegend),
+                  plot.title   = element_text(face = "bold", size = sText),
+                  axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
+                  axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
+                  axis.title.x = element_text(color = "black", size = sText, face = "plain"),
+                  axis.title.y = element_text(color = "black", size = sText, face = "plain"))
+
+
+  if(legend.on){
+    themeP = theme2
+  }else{
+    themeP = theme1
+  }
+
+  # Collecting the data
+  load( file = paste(path_wd, "Workspaces/",
+                     date, "_",
+                     sim_Name,
+                     "_ALL.rdata",
+                     sep = "" ) )
+
+  # Plot the simulation results
+  pngname <- paste( path_pics,
+                    sim_Name,
+                    ".png",
+                    sep = "" )
+  Msim <- cov$Msim
+  level <- cov$level
+  #png( pngname, width = 550, height = 450 )
+  target <- sqrt( level * ( 1 - level ) / Msim ) * c(-qnorm(level/2 + 1/2), 0, qnorm(level/2 + 1/2)) + level
+  xLab <- rownames(cov$rates)
+  yLab <- colnames(cov$rates)
+  covs <- as_tibble(cov$rates, rownames = "N") %>%
+    melt(., id.vars = "N", variable = "Method", value.name = "CovRate") %>%
+    as_tibble() %>% mutate_if(is.character, as.numeric)
+
+  X11(width = 1.2*7, height = 7)
+  # Plot the Covering Rates by Method
+  print( ggplot(covs, aes(N, CovRate, group = Method, col = Method)) +
+           xlab( "Sample Size [N]" ) +
+           ylab( "Covering Rate" ) +
+           ggtitle( title ) +
+           geom_hline( yintercept = target[2], size = sLine ) +
+           geom_hline( yintercept = target[1], size = sLine, linetype = "twodash" ) +
+           geom_hline( yintercept = target[3], size = sLine, linetype = "twodash" ) +
+           geom_point(size = sPch) + geom_line(size = sLine) +
+           themeP +
+           coord_cartesian(ylim = c(ylow, yup ))
+  )
+  savePlot(filename = pngname)
+  dev.off()
 }
 
 #-------------------------------------------------------------------------------
-sLegend <- 25
-sText   <- 25
-Sylab = 1.5
-Sxlab = 1.5
-sLine = 1.5
-sPch = 4
+for(model in c("ModelA", "ModelB", "ModelC")){
+  for(transformation in c("skewness", "skewness (normality)", "kurtosis", "kurtosis (normality)")){
+    if(transformation %in% c("skewness", "kurtosis", "cohensd")){
+      se.est <- c("estimate", "exact gaussian")
+    }else if(transformation %in% c("skewness (normality)",
+                                   "kurtosis (normality)",
+                                   "Ksquare (normality)")){
+      se.est <- c("estimate", 1)
+    }else if(transformation == "Ksquare"){
+      se.est <- c("estimate", 2)
+    }
 
-theme1 <- theme(legend.position = "none",
-                plot.title   = element_text(face = "bold", size = sText),
-                axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
-                axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
-                axis.title.x = element_text(color = "black", size = sText, face = "plain"),
-                axis.title.y = element_text(color = "black", size = sText, face = "plain"))
-
-theme2 <- theme(legend.title = element_blank(),
-                legend.position = c(0.82, 0.3),
-                legend.key.size = unit(1.1, 'cm'),
-                legend.text = element_text(size = sLegend),
-                plot.title   = element_text(face = "bold", size = sText),
-                axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
-                axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
-                axis.title.x = element_text(color = "black", size = sText, face = "plain"),
-                axis.title.y = element_text(color = "black", size = sText, face = "plain"))
-
-
-
-#-------------------------------------------------------------------------------
-# FALSE / FALSE plot
-bias.l   = FALSE
-se.est.l = FALSE
-
-title = "No Bias correction, Gaussian variance"
-
-# Collecting the data
-load( file = paste(path_wd, "Workspaces/",
-                date, "_",
-                model, "_",
-                transformation.l,
-                "_bias_", bias.l,
-                "_se.est_", se.est.l,
-                "_full.rdata",
-                sep = "" ) )
-
-# Plot the simulation results
-pngname <- paste( path_pics,
-                  model, "_",
-                  transformation.l,
-                  "_bias_", bias.l,
-                  "_se.est_", se.est.l,
-                  ".png",
-                  sep = "" )
-png( pngname, width = 550, height = 450 )
-target <- sqrt( lvl * ( 1 - lvl ) / Msim ) * c(-qnorm(lvl/2 + 1/2), 0, qnorm(lvl/2 + 1/2)) + lvl
-xLab <- rownames(covRates)
-yLab <- colnames(covRates)
-covs <- as_tibble(covRates, rownames = "N") %>%
-  melt(., id.vars = "N", variable = "Method", value.name = "CovRate") %>%
-  as_tibble() %>% mutate_if(is.character, as.numeric)
-
-# Plot the Covering Rates by Method
-print( ggplot(covs, aes(N, CovRate, group = Method, col = Method)) +
-         xlab( "Sample Size [N]" ) +
-         ylab( "Covering Rate" ) +
-         ggtitle( title ) +
-         geom_hline( yintercept = target[2], size = sLine ) +
-         geom_hline( yintercept = target[1], size = sLine, linetype = "twodash" ) +
-         geom_hline( yintercept = target[3], size = sLine, linetype = "twodash" ) +
-         geom_point(size = sPch) + geom_line(size = sLine) +
-         theme2 +
-         coord_cartesian(ylim = c(ylow, yup ))
-)
-dev.off()
+    for(bias.l in c("asymptotic gaussian", "estimate")){
+      for(se.est.l in se.est){
+        # Legend plot or not
+        if(bias.l == "asymptotic gaussian" & (se.est.l == "exact gaussian" | se.est.l == "1")){
+          legend.on = TRUE
+        }else{
+          legend.on = FALSE
+        }
+        # Plot the data
+        plot_covResults(model, transformation, bias.l, se.est.l, legend.on)
+      }
+    }
+  }
+}
 
 #-------------------------------------------------------------------------------
 # FALSE / TRUE plot
@@ -115,7 +166,7 @@ title = "No Bias correction, Estimated variance"
 load( file = paste(path_wd, "Workspaces/",
                    date, "_",
                    model, "_",
-                   transformation.l,
+                   transformation,
                    "_bias_", bias.l,
                    "_se.est_", se.est.l,
                    "_full.rdata",
@@ -124,21 +175,21 @@ load( file = paste(path_wd, "Workspaces/",
 # Plot the simulation results
 pngname <- paste( path_pics,
                   model, "_",
-                  transformation.l,
+                  transformation,
                   "_bias_", bias.l,
                   "_se.est_", se.est.l,
                   ".png",
                   sep = "" )
 png( pngname, width = 550, height = 450 )
-target <- sqrt( lvl * ( 1 - lvl ) / Msim ) * c(-qnorm(lvl/2 + 1/2), 0, qnorm(lvl/2 + 1/2)) + lvl
-xLab <- rownames(covRates)
-yLab <- colnames(covRates)
-covs <- as_tibble(covRates, rownames = "N") %>%
+target <- sqrt( level * ( 1 - level ) / Msim ) * c(-qnorm(level/2 + 1/2), 0, qnorm(level/2 + 1/2)) + level
+xLab <- rownames(cov$rates)
+yLab <- colnames(cov$rates)
+covs <- as_tibble(cov$rates, rownames = "N") %>%
   melt(., id.vars = "N", variable = "Method", value.name = "CovRate") %>%
   as_tibble() %>% mutate_if(is.character, as.numeric)
 
 # Plot the Covering Rates by Method
-if( model == "ModelC" & transformation.l == "cohensd" ){
+if( model == "ModelC" & transformation == "cohensd" ){
   print( ggplot(covs, aes(N, CovRate, group = Method, col = Method)) +
            xlab( "Sample Size [N]" ) +
            ylab( " " ) +
@@ -176,7 +227,7 @@ title = "Bias correction, Gaussian variance"
 load( file = paste(path_wd, "Workspaces/",
                    date, "_",
                    model, "_",
-                   transformation.l,
+                   transformation,
                    "_bias_", bias.l,
                    "_se.est_", se.est.l,
                    "_full.rdata",
@@ -185,16 +236,16 @@ load( file = paste(path_wd, "Workspaces/",
 # Plot the simulation results
 pngname <- paste( path_pics,
                   model, "_",
-                  transformation.l,
+                  transformation,
                   "_bias_", bias.l,
                   "_se.est_", se.est.l,
                   ".png",
                   sep = "" )
 png( pngname, width = 550, height = 450 )
-target <- sqrt( lvl * ( 1 - lvl ) / Msim ) * c(-qnorm(lvl/2 + 1/2), 0, qnorm(lvl/2 + 1/2)) + lvl
-xLab <- rownames(covRates)
-yLab <- colnames(covRates)
-covs <- as_tibble(covRates, rownames = "N") %>%
+target <- sqrt( level * ( 1 - level ) / Msim ) * c(-qnorm(level/2 + 1/2), 0, qnorm(level/2 + 1/2)) + level
+xLab <- rownames(cov$rates)
+yLab <- colnames(cov$rates)
+covs <- as_tibble(cov$rates, rownames = "N") %>%
   melt(., id.vars = "N", variable = "Method", value.name = "CovRate") %>%
   as_tibble() %>% mutate_if(is.character, as.numeric)
 
@@ -223,7 +274,7 @@ title = "Bias correction, Estimated variance"
 load( file = paste(path_wd, "Workspaces/",
                    date, "_",
                    model, "_",
-                   transformation.l,
+                   transformation,
                    "_bias_", bias.l,
                    "_se.est_", se.est.l,
                    "_full.rdata",
@@ -232,16 +283,16 @@ load( file = paste(path_wd, "Workspaces/",
 # Plot the simulation results
 pngname <- paste( path_pics,
                   model, "_",
-                  transformation.l,
+                  transformation,
                   "_bias_", bias.l,
                   "_se.est_", se.est.l,
                   ".png",
                   sep = "" )
 png( pngname, width = 550, height = 450 )
-target <- sqrt( lvl * ( 1 - lvl ) / Msim ) * c(-qnorm(lvl/2 + 1/2), 0, qnorm(lvl/2 + 1/2)) + lvl
-xLab <- rownames(covRates)
-yLab <- colnames(covRates)
-covs <- as_tibble(covRates, rownames = "N") %>%
+target <- sqrt( level * ( 1 - level ) / Msim ) * c(-qnorm(level/2 + 1/2), 0, qnorm(level/2 + 1/2)) + level
+xLab <- rownames(cov$rates)
+yLab <- colnames(cov$rates)
+covs <- as_tibble(cov$rates, rownames = "N") %>%
   melt(., id.vars = "N", variable = "Method", value.name = "CovRate") %>%
   as_tibble() %>% mutate_if(is.character, as.numeric)
 
