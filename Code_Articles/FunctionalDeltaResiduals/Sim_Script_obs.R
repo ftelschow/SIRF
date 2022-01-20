@@ -17,12 +17,12 @@ setwd(path_wd)
 source(paste(path_wd, "Article_simulation_obs.R", sep = ""))
 
 # needed to make string without empty spaces
-if(args[3] == "skewnessN"){
+if(args[8] == "skewnessN"){
   transform = "skewness (normality)"
-}else if(args[3] == "kurtosisN"){
+}else if(args[8] == "kurtosisN"){
   transform = "kurtosis (normality)"
 }else{
-  transform = args[3]
+  transform = args[8]
 }
 
 # Simulate the covering rate
