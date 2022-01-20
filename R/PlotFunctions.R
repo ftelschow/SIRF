@@ -96,7 +96,17 @@ plot_scb <- function(x, scb, scb2 = NULL, true = NULL, s1name = "est Sample1",
 
 }
 
-plot_covSim <- function(covSim, title = "", legend.position = "none"){
+
+#' This functions computes the standard
+#'
+#' @param x The considered transformation of the moments
+#' @param scb Vector grid for evaluation of the smoothed field
+#' @param scb2 Vector grid for evaluation of the smoothed field
+#' @param true Vector grid for evaluation of the smoothed field
+#' @param title Vector grid for evaluation of the smoothed field
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
+plot_covSim <- function(covSim, ylims = c(0.3,1), title = "", legend.position = "none"){
   lvl      <- covSim$level
   covRates <- covSim$rates
   Msim     <- covSim$Msim
@@ -109,8 +119,9 @@ plot_covSim <- function(covSim, title = "", legend.position = "none"){
           as_tibble() %>% mutate_if(is.character, as.numeric)
 
   # Plot the Covering Rates by Method
+  X11()
   print( ggplot(covs, aes(N, CovRate, group = Method, col = Method)) +
-         geom_point() + geom_line() +
+         geom_point() + geom_line() + coord_cartesian(ylim = ylims) +
          xlab( "Sample Size [N]" ) + ylab( "Covering Rate" ) +
          ggtitle( title ) +
          geom_hline( yintercept = target[2] ) +
