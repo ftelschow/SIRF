@@ -10,6 +10,8 @@ suppressPackageStartupMessages(library(tidyverse))
 # Get the working directory
 path_wd = args[7]
 
+print(path_wd)
+
 # Set the working path
 setwd(path_wd)
 
@@ -30,7 +32,7 @@ Article_simulation( Model   = args[1], # "ModelA", "ModelB", "ModelC"
                     transformation = args[8],
                      Msim    = as.numeric(args[2]), # number of simulations
                      Nvec    = c( 50, 100, 200, 400, 800 ), # sample sizes considered
-                     x       = as.numeric(args[4]), # locations the process is evaluated at
+                     x       = seq(0, 1, length.out = as.numeric(args[4])), # locations the process is evaluated at
                      level   = .95,  # level of simultaneous control
                      obs     = as.numeric(args[5]),
                      sim_tag = args[3],

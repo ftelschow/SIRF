@@ -127,7 +127,7 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
                         "_bias_", gsub(" ", "", bias.est.l),
                         "_seEst_", gsub(" ", "_", se.est.l),
                         "_x_", length(x),
-                        "_obs_", obs, sep = "")
+                        "_obs_", 100*obs, sep = "")
       cov = covering_scb( Msim   = Msim,
                           N      = Nvec,
                           level  = level,
