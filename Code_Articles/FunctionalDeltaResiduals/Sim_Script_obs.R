@@ -27,7 +27,7 @@ if(args[8] == "skewnessN"){
 
 # Simulate the covering rate
 Article_simulation( Model   = args[1], # "ModelA", "ModelB", "ModelC"
-                    transformation = args[8],
+                    transformation = transform,
                      Msim    = as.numeric(args[2]), # number of simulations
                      Nvec    = c( 50, 100, 200, 400, 800 ), # sample sizes considered
                      x       = seq(0, 1, length.out = as.numeric(args[4])), # locations the process is evaluated at
