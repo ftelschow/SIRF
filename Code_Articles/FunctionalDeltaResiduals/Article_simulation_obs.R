@@ -49,7 +49,7 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
   }
 
 
-  biasvec = c("asymptotic gaussian", "estimate")
+  biasvec = c("asymptotic gaussian")#, "estimate")
 
   #-------------------------------------------------------------------------------
   # Models
