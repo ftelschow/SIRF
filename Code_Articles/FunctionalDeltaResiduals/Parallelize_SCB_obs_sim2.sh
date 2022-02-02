@@ -3,7 +3,7 @@ for parallel_count in {21..40}
 do
 for model in "ModelA" "ModelB"
 do
-for transform in "cohensd" "skewness" "skewnessN"
+for transform in "skewnessN"
 do
 for x in 50 100 175
 do
