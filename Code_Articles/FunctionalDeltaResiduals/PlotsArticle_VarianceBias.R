@@ -8,6 +8,9 @@ require(tidyverse)
 require(gaussplotR)
 require(fields)
 
+hvalue = 6
+wvalue = 1.2*8
+
 # Load the data
 path_wd   <- "/home/fabian/Seafile/Code/Rpackages/SCBfun/DeltaResiduals/"
 load(paste(path_wd, "Workspaces/Variance_Simulation.Rdata", sep = ""))
@@ -50,25 +53,32 @@ relBias_sn <- as_tibble(relBias_sn, rownames = "N") %>%
 # Theme of the plots
 #-------------------------------------------------------------------------------
 sLegend <- 25
-sText   <- 25
+sText   <- 30
+sTitle  <- 35
+sLegend <- 25
 Sylab = 1.5
 Sxlab = 1.5
-sLine = 2
+sLine = 1.5
+sPch = 4
+sLineMean   <- 3
+
+wvalue = 1.3*7
+hvalue = 7
 
 theme1 <- theme(line = element_line(size = ),
                 legend.position = "none",
-                plot.title   = element_text(face = "bold", size = sText),
+                plot.title   = element_text(face = "bold", size = sTitle),
                 axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
                 axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
                 axis.title.x = element_text(color = "black", size = sText, face = "plain"),
                 axis.title.y = element_text(color = "black", size = sText, face = "plain"))
 
 theme2 <- theme(line = element_line(size = ),
-                legend.title = element_text(face = "bold", size = sText),
-                legend.position = c(0.82, 0.3),
+                legend.title = element_text(face = "bold", size = sLegend),
+                legend.position = c(0.82, 0.32),
                 legend.key.size = unit(1.1, 'cm'),
                 legend.text = element_text(size = sLegend),
-                plot.title   = element_text(face = "bold", size = sText),
+                plot.title   = element_text(face = "bold", size = sTitle),
                 axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
                 axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
                 axis.title.x = element_text(color = "black", size = sText, face = "plain"),
@@ -79,12 +89,12 @@ theme2 <- theme(line = element_line(size = ),
 pngname <- paste( path_pics,
                   "CohensdVarianceEstimate.png",
                   sep = "" )
-X11(width = 1.2*7, height = 7)
+X11(width = wvalue, height = hvalue)
 print( ggplot(relBias_d, aes(x, rel.bias, group = N, col = N)) +
          geom_line(size = sLine) +
          xlab( "Location" ) +
          ylab( "Relative Bias" ) +
-         ggtitle( "Cohen's d: Variance Estimate" ) +
+         ggtitle( "Cohen's d" ) +
          theme2) +
          coord_cartesian(ylim = c(-0.05, 0)) +
          labs(colour = "Sample Size")
@@ -95,12 +105,12 @@ dev.off()
 pngname <- paste( path_pics,
                   "SkewnessVarianceEstimate.png",
                   sep = "" )
-X11(width = 1.2*7, height = 7)
+X11(width = wvalue, height = hvalue)
 print( ggplot(relBias_s, aes(x, rel.bias, group = N, col = N)) +
          geom_line(size = sLine) +
          xlab( "Location" ) +
          ylab( "Relative Bias" ) +
-         ggtitle( "Skewness: Variance Estimate" ) +
+         ggtitle( "Skewness" ) +
          theme1 +
          coord_cartesian(ylim = c(-0.30, 0)) )
 savePlot(filename = pngname)
@@ -110,12 +120,12 @@ dev.off()
 pngname <- paste( path_pics,
                   "SkewnessNormalityVarianceEstimate.png",
                   sep = "" )
-X11(width = 1.2*7, height = 7)
+X11(width = wvalue, height = hvalue)
 print( ggplot(relBias_sn, aes(x, rel.bias, group = N, col = N)) +
          geom_line(size = sLine) +
          xlab( "Location" ) +
          ylab( "Relative Bias" ) +
-         ggtitle( "Transf. Skewness: Variance Estimate" ) +
+         ggtitle( "Transformed Skewness" ) +
          theme1 +
          coord_cartesian(ylim = c(-0.30, 0)) )
 savePlot(filename = pngname)

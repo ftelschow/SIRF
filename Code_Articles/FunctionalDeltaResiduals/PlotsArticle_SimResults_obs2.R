@@ -16,55 +16,29 @@ path_pics <- "~/Seafile/Projects/2019_DeltaResiduals/Article/Figures/"
 setwd(path_wd)
 
 date  = "2022_01_11"
-#date  = "2022_11_19"
-transvec <- c("cohensd", "skewness", "skewness (normality)", "kurtosis", "kurtosis (normality)")
-#transvec <-
-
-sLegend <- 25
-sText   <- 30
-sTitle  <- 35
-sLegend <- 25
-Sylab = 1.5
-Sxlab = 1.5
-sLine = 1.5
-sPch = 4
-
-wvalue = 1.3*7
-hvalue = 7
 
 #-------------------------------------------------------------------------------
 plot_covResults <- function(model, transformation, bias.l, se.est.l, legend.on = FALSE){
-  sim_Name <- paste(model, "_",
+  sim_Name <- paste(Model, "_",
                     gsub( "[()]", "", gsub(" ", "_", transformation)),
-                    "_bias_", gsub(" ", "", bias.l),
-                    "_seEst_", gsub(" ", "_", se.est.l), sep = "")
-
+                    "_bias_", gsub(" ", "", bias.est.l),
+                    "_seEst_", gsub(" ", "_", se.est.l),
+                    "_obs_", 100*obs, sep = "")
+  
   if(bias.l == "asymptotic gaussian"){
     title = "No Bias correction,"
   }else{
     title = "Bias correction,"
   }
-
-  if(transformation == "cohensd"){
-    title = "Cohen's d,"
-  }else if(transformation == "skewness"){
-    title = "Skewness,"
-  }else if(transformation == "skewness (normality)"){
-    title = "Transf. Skewness,"
-  }else if(transformation == "kurtosis"){
-    title = "Kurtosis,"
-  }else if(transformation == "kurtosis (normality)"){
-    title = "Transf. Kurtosis,"
-  }
-
+  
   if(se.est.l == "exact gaussian"){
-    title = paste(title, "Gaussian S.E.")
+    title = paste(title, "Gaussian variance")
   }else if(se.est.l == "1"){
-    title = paste(title, "Gaussian S.E.")
+    title = paste(title, "Gaussian variance")
   }else{
-    title = paste(title, "Estimated S.E.")
+    title = paste(title, "Estimated variance")
   }
-
+  
   if( transformation %in% c("kurtosis", "kurtosis (normality)") ){
     ylow = 0.65
     yup  = 1
@@ -83,38 +57,62 @@ plot_covResults <- function(model, transformation, bias.l, se.est.l, legend.on =
     ylow = 0.85
     yup  = 1
   }
-
+  
+  sLegend <- 25
+  sText   <- 25
+  Sylab = 1.5
+  Sxlab = 1.5
+  sLine = 1.5
+  sPch = 4
+  
   theme1 <- theme(legend.position = "none",
-                  plot.title   = element_text(face = "bold", size = sTitle),
+                  plot.title   = element_text(face = "bold", size = sText),
                   axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
                   axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
                   axis.title.x = element_text(color = "black", size = sText, face = "plain"),
                   axis.title.y = element_text(color = "black", size = sText, face = "plain"))
-
+  
   theme2 <- theme(legend.title = element_blank(),
                   legend.position = c(0.82, 0.3),
                   legend.key.size = unit(1.1, 'cm'),
                   legend.text = element_text(size = sLegend),
-                  plot.title   = element_text(face = "bold", size = sTitle),
+                  plot.title   = element_text(face = "bold", size = sText),
                   axis.text.x  = element_text(color = "black", size = sText, face = "plain"),
                   axis.text.y  = element_text(color = "black", size = sText, face = "plain"),
                   axis.title.x = element_text(color = "black", size = sText, face = "plain"),
                   axis.title.y = element_text(color = "black", size = sText, face = "plain"))
-
-
+  
+  
   if(legend.on){
     themeP = theme2
   }else{
     themeP = theme1
   }
-
+  
   # Collecting the data
-  load( file = paste(path_wd, "Workspaces/",
-                     date, "_",
-                     sim_Name,
-                     "_ALL.rdata",
-                     sep = "" ) )
-
+  covRate <- NULL
+  for(nx in nx_vec){
+    load( file = paste( paste(path_wd, "Workspaces/",sep = ""),
+                        date, "_",
+                        sim_Name,
+                        Model, "_",
+                        gsub( "[()]", "", gsub(" ", "_", transformation)),
+                        "_bias_", gsub(" ", "", bias.est.l),
+                        "_seEst_", gsub(" ", "_", se.est.l),
+                        "_x_", nx,
+                        "_obs_", 100*obs,
+                        "_ALL",
+                        ".rdata",sep = "") )
+    
+    covRates_nx <- cbind(covRates, nx)
+    colnames(covRates_nx) <- c(colnames(covRates), "T")
+    
+    covRate <- rbind(covRate, covRates_nx)
+  }
+  
+  covRates <- covRate
+  rm(covRate)
+  
   # Plot the simulation results
   pngname <- paste( path_pics,
                     sim_Name,
@@ -125,18 +123,12 @@ plot_covResults <- function(model, transformation, bias.l, se.est.l, legend.on =
   #png( pngname, width = 550, height = 450 )
   target <- sqrt( level * ( 1 - level ) / Msim ) * c(-qnorm(level/2 + 1/2), 0, qnorm(level/2 + 1/2)) + level
   xLab <- rownames(cov$rates)
-  nav <- colnames(cov$rates)
-  nav[6] <- "rtMult"
-  yLab <- nav
-  colnames(cov$rates) <- nav
-  rm(nav)
-
-
+  yLab <- colnames(cov$rates)
   covs <- as_tibble(cov$rates, rownames = "N") %>%
     melt(., id.vars = "N", variable = "Method", value.name = "CovRate") %>%
     as_tibble() %>% mutate_if(is.character, as.numeric)
-
-  X11(width = wvalue, height = hvalue)
+  
+  X11(width = 1.2*7, height = 7)
   # Plot the Covering Rates by Method
   print( ggplot(covs, aes(N, CovRate, group = Method, col = Method)) +
            xlab( "Sample Size [N]" ) +
@@ -155,7 +147,7 @@ plot_covResults <- function(model, transformation, bias.l, se.est.l, legend.on =
 
 #-------------------------------------------------------------------------------
 for(model in c("ModelA", "ModelB", "ModelC")){
-  for(transformation in transvec){
+  for(transformation in c("skewness", "skewness (normality)", "kurtosis", "kurtosis (normality)")){
     if(transformation %in% c("skewness", "kurtosis", "cohensd")){
       se.est <- c("estimate", "exact gaussian")
     }else if(transformation %in% c("skewness (normality)",
@@ -165,13 +157,11 @@ for(model in c("ModelA", "ModelB", "ModelC")){
     }else if(transformation == "Ksquare"){
       se.est <- c("estimate", 2)
     }
-
+    
     for(bias.l in c("asymptotic gaussian", "estimate")){
       for(se.est.l in se.est){
         # Legend plot or not
-        if( se.est.l == "exact gaussian"){
-          legend.on = TRUE
-        }else if(model == "ModelC" & se.est.l == "estimate" & transformation == "skewness"){
+        if(bias.l == "asymptotic gaussian" & (se.est.l == "exact gaussian" | se.est.l == "1")){
           legend.on = TRUE
         }else{
           legend.on = FALSE

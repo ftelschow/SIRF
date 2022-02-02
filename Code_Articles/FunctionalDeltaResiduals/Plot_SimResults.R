@@ -22,10 +22,13 @@ setwd(path_wd)
 #source(paste(path_wd, "Workspaces/Variance_Simulation.Rdata", sep = ""))
 
 date  = "2022_01_11"
-simMax = 20
+simMax = 40
+transVec <- c("skewness", "skewness (normality)", "kurtosis", "kurtosis (normality)")
+#transVec <- c("cohensd")
+modelVec <- c("ModelA", "ModelB", "ModelC")
 
-for(Model in c("ModelA", "ModelB", "ModelC") ){
-  for(transformation in c("skewness", "skewness (normality)", "kurtosis", "kurtosis (normality)")){
+for(Model in modelVec ){
+  for(transformation in transVec){
 
       if(transformation %in% c("skewness", "kurtosis", "cohensd")){
         se.est <- c("estimate", "exact gaussian")
