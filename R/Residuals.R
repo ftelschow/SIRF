@@ -63,9 +63,10 @@ DeltaMomentResiduals <- function(Y,
       m21     <- var_Gaussian("skewness", N.sample)
       gamma21 <- gamma2_Gaussian("skewness", N.sample)
 
-      W2    <- sqrt(2 * gamma21 + 4) - 1
+      W2     <- sqrt(2 * gamma21 + 4) - 1
+      W2     <- sqrt(2 * gamma21 - 2 ) - 1
       delta1 <- 1 / sqrt(log(sqrt(W2))) / sqrt(N.sample)
-      alpha <- sqrt(2 / (W2 - 1))
+      alpha  <- sqrt(2 / (W2 - 1))
 
       transformation <- as.formula(bquote(f ~ .(delta1) * log( ( mu3 - 3*mu2*mu1 + 2*mu1^3 ) /
                                                       ( mu2 - mu1^2 )^(3/2) /
