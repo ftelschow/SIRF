@@ -48,7 +48,6 @@ Article_simulation <- function(Model   = "ModelA", # "ModelB",  "ModelC",
     se.est <- c("estimate", 2)
   }
 
-
   biasvec = c("asymptotic gaussian", "estimate")
 
   #-------------------------------------------------------------------------------
