@@ -130,9 +130,6 @@ plot_var_ests <- function(method, x, estVar, trueVar, outname = NULL){
   }
 }
 
-methodVec = c("cohensd", "skewness", "kurtosis")
-methodVec = c("skewness (normality)")
-
 #-------------------------------------------------------------------------------
 # Simulation model A
 #-------------------------------------------------------------------------------

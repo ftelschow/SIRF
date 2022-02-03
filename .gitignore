@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+.rdata
+Code_Articles/FunctionalDeltaResiduals/Pics/*.png
+Code_Articles/FunctionalDeltaResiduals/Workspaces/*_ALL.rdata
+.Ruserdata
+src/*.o
+src/*.so
+src/*.dll
+man/*.Rd

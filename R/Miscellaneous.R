@@ -32,11 +32,13 @@ WF_transform <- function(x, df = 2){
 Z1_transform <- function(g1, N){
   if(is.infinite(N)){
     asinh(g1 * 1.216675) * 0.3355443
+    asinh(g1 * 1.231789) / 3
   }else{
     m21     <- var_Gaussian("skewness", N)
     gamma21 <- gamma2_Gaussian("skewness", N)
 
     W2 <- sqrt(2 * gamma21 + 4) - 1
+    W2 <- sqrt(2 * gamma21 - 2 ) - 1
     d  <- 1 / sqrt(log(sqrt(W2))) / sqrt(N)
     a  <- sqrt(2 / (W2 - 1))
 
@@ -249,6 +251,7 @@ gamma2_Gaussian <- function(transformation, N, hatd = NULL){
   }
   else if(transformation == "skewness"){
     gamma2 <- 36 * (N - 7) * (N^2 + 2*N - 5) / ((N - 2) * (N + 5) * (N + 7) * (N + 9))
+    gamma2 <- 3 * (N^2 +27*N - 70) * (N + 1) * (N + 3) / ((N - 2) * (N + 5) * (N + 7) * (N + 9))
   }else if(transformation == "kurtosis"){
     gamma2 <- NaN
   }
