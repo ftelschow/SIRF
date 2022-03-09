@@ -118,7 +118,7 @@ for(Model in c("ModelA", "ModelB") ){
         #          png( pngname, width = 550, height = 450 )
         plot_covSim(cov, title = "", legend.position = "none", ylims = c(0.2,1))
         savePlot(filename = pngname)
-        #          dev.off()
+                  dev.off()
       }
     }
     }
