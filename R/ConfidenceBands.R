@@ -174,7 +174,7 @@ scb_moments <- function(Y,
       se <- sqrt(1 + residuals$statistic^2 / 2) / sqrt(N)
     }else if(transformation == "skewness"){
       se <- 6 / sqrt(N)
-    }else if(transformation %in% c("skewness", "kurtosis", "kurtosis (unbiased)")){
+    }else if(transformation %in% c("kurtosis", "kurtosis (unbiased)")){
       se <- 24 / sqrt(N)
     }
   }else if(se.est == "exact gaussian"){
