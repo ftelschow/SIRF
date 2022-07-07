@@ -483,14 +483,14 @@ MultiplierBootstrapSplit <- function( R,
       if(sum(Splus) == 1){
         distVec1 <- sqrt( N ) * bootMeans[Splus,] / data.sigma[Splus,]
       }else if(sum(Splus) > 1){
-        distVec1 <- sqrt( N ) * apply( t(t(bootMeans[Splus,])) / t(t(data.sigma[Splus,])), 2, max )
+        distVec1 <- sqrt( N ) * apply( t(t(bootMeans[Splus,])) / data.sigma[Splus,], 2, max )
       }else{t(t(data.sigma[Splus,]))
         distVec1 <- rep(-Inf, Mboots)
       }
       if(sum(Sminus) == 1){
         distVec2 <- sqrt( N ) * bootMeans[Sminus,] / data.sigma[Sminus,]
       }else if(sum(Sminus) > 1){
-        distVec2 <- sqrt( N ) * apply( t(t(bootMeans[Sminus,])) / t(t(data.sigma[Sminus,])), 2, max )
+        distVec2 <- sqrt( N ) * apply( t(t(bootMeans[Sminus,])) / data.sigma[Sminus,], 2, max )
       }else{
         distVec2 <- rep(-Inf, Mboots)
       }
