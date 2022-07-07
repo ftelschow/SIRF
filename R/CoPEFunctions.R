@@ -260,17 +260,29 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                                Mboots = 1e4,
                                mu = NULL
 ){
+  #
+  if(kN == 0 & !is.null(mu)){
+    estmu = mu
+    method = "regular"
+    weights = "gaussian"
+  }else{
+    estmu = hatmu
+    method = "t"
+    weights = "rademacher"
+  }
 
   # Estimate the quantile. This requires estimation of the critical set
   if(type == "extraction"){
-    SC = PreimageC(hatmu = hatmu, C = C, hatsigma = hatsigma,
+    SC = PreimageC(hatmu = estmu, C = C, hatsigma = hatsigma,
                    tN = tN, kN = kN, type = "rel")
     Splus  = SC$S_p
     Sminus = SC$S_m
     q = MultiplierBootstrapSplit(R = R, Splus = Splus,
                                  Sminus = Sminus,
                                  alpha  = alpha,
-                                 Mboots = Mboots)
+                                 Mboots = Mboots,
+                                 method  = method,
+                                 weights = weights)
 
     # ColorVector of estimated set
     colVecSet = rep("black", length(x))
@@ -278,27 +290,35 @@ CoPE_inference <- function(hatmu, hatsigma, R,
     colVecSet[SC$S_m] = "blue"
 
   }else if(type == "selection"){
-    SC = PreimageC(hatmu = hatmu, C = C, hatsigma = hatsigma,
+    SC = PreimageC(hatmu = estmu, C = C, hatsigma = hatsigma,
                    tN = tN, kN = kN, type = "selection")
 
-    q = MultiplierBootstrap(R = R[SC,], alpha  = alpha, Mboots = Mboots)
+    q = MultiplierBootstrap(R = R[SC,],
+                            alpha  = alpha,
+                            Mboots = Mboots,
+                            method  = method,
+                            weights = weights)
 
     # ColorVector of estimated set
     colVecSet = rep("black", length(x))
     colVecSet[SC] = "red"
 
   }else if(type == "classical"){
-    SC = PreimageC(hatmu = hatmu, C = C, hatsigma = hatsigma,
+    SC = PreimageC(hatmu = estmu, C = C, hatsigma = hatsigma,
                    tN = tN, kN = kN, type = "rel")
     SCC = SC$S_p | SC$S_m
     if(sum(SCC) == 1){
       q = MultiplierBootstrap(R = t(R[SCC,]),
                               Mboots = Mboots,
-                              alpha  = alpha)
+                              alpha  = alpha,
+                              method  = method,
+                              weights = weights)
     }else if(sum(SCC) > 1){
       q = MultiplierBootstrap(R = t(t(R[SCC,])),
                             Mboots = Mboots,
-                            alpha  = alpha)
+                            alpha  = alpha,
+                            method  = method,
+                            weights = weights)
     }else{
       q = list()
       q$q = 0
@@ -307,7 +327,11 @@ CoPE_inference <- function(hatmu, hatsigma, R,
     colVecSet = rep("black", length(x))
     colVecSet[SC$S_m | SC$S_p] = "red"
   }else if(type == "SCB"){
-    q = MultiplierBootstrap(R = R, Mboots = Mboots, alpha = alpha)
+    q = MultiplierBootstrap(R = R,
+                            Mboots = Mboots,
+                            alpha = alpha,
+                            method  = method,
+                            weights = weights)
 
     # ColorVector of estimated set
     colVecSet = rep("black", length(x))

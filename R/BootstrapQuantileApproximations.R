@@ -472,7 +472,7 @@ MultiplierBootstrapSplit <- function( R,
 
       # Estimate the variance from the sample
       if( method == "regular" ){
-        data.sigma <- sqrt( matrixStats::rowVars( R ) )
+        data.sigma <- t(t(sqrt( matrixStats::rowVars( R ) )))
       }else if( method == "t" ){
         bootSecMoments <- R^2 %*% multiplier^2 / N
         # We put an abs here to make sure that no NaNs are produced due to machine precision error.
@@ -480,19 +480,26 @@ MultiplierBootstrapSplit <- function( R,
       }
 
       # Compute bootstrap distribution of the maximum
-      if(sum(Splus) != 0){
+      if(sum(Splus) == 1){
+        distVec1 <- sqrt( N ) * bootMeans[Splus,] / data.sigma[Splus,]
+      }else if(sum(Splus) > 1){
         distVec1 <- sqrt( N ) * apply( t(t(bootMeans[Splus,])) / t(t(data.sigma[Splus,])), 2, max )
-      }else{
+      }else{t(t(data.sigma[Splus,]))
         distVec1 <- rep(-Inf, Mboots)
       }
-      if(sum(Sminus) != 0){
-        distVec2 <- sqrt( N ) * apply( t(t(-bootMeans[Sminus,])) / t(t(data.sigma[Sminus,])), 2, max )
+      if(sum(Sminus) == 1){
+        distVec2 <- sqrt( N ) * bootMeans[Sminus,] / data.sigma[Sminus,]
+      }else if(sum(Sminus) > 1){
+        distVec2 <- sqrt( N ) * apply( t(t(bootMeans[Sminus,])) / t(t(data.sigma[Sminus,])), 2, max )
       }else{
         distVec2 <- rep(-Inf, Mboots)
       }
 
-      distVec  <- apply( rbind(distVec1, distVec2), 2, max )
+      if( method == "regular" ){
+        data.sigma = as.vector(data.sigma)
+      }
 
+      distVec  <- apply( rbind(distVec1, distVec2), 2, max )
 
   #----- Return quantile and bootstrap distribution
   return( list( z       = distVec,
