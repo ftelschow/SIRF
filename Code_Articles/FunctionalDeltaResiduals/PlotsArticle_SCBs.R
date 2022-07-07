@@ -14,8 +14,6 @@ pic_path <- "/home/fabian/Seafile/Projects/2019_DeltaResiduals/Article/Figures/"
 
 set.seed(666)
 
-wvalue = 1.22*7.3
-hvalue = 6
 sLegend <- 25
 sText   <- 30
 sTitle  <- 35
@@ -25,8 +23,9 @@ Sxlab = 1.5
 sLine = 1.5
 sPch = 4
 
-wvalue = 1.3*7
 hvalue = 7
+wvalue = 1.3*hvalue
+
 sLineMean = 3
 
 theme1 <- theme(legend.position = c(0.55, 0.88),
@@ -53,9 +52,13 @@ theme2 <- theme(legend.position = "none",
                 axis.title.x = element_text(color = "black", size = sText, face = "plain"),
                 axis.title.y = element_text(color = "black", size = sText, face = "plain"))
 
+x = seq(0,1, length.out=200)
 #-------------------------------------------------------------------------------
 plot_scbExamples <- function(Model, transformation, method = list(name = "GKF", field = "z"), legend.on = T){
   x = seq(0, 1, length.out = 100)
+  #Our transformation function
+  scaleFUN <- function(x) sprintf("%.2f", x)
+
   if(Model == "A"){
     # Model A
     mu_model    = function( x ){ sin( 4 * pi * x ) * exp( -3 * x ) }
@@ -128,13 +131,12 @@ plot_scbExamples <- function(Model, transformation, method = list(name = "GKF", 
   }else if(transformation == "skewness"){
     title = paste("Model ", Model, ": Skewness", sep = "")
   }else if(transformation == "skewness (normality)"){
-    title = paste("Model ", Model, ": Transf. Skewness", sep = "")
+    title = paste("Model ", Model, ": Transf. Skew", sep = "")
   }else if(transformation == "kurtosis"){
     title = paste("Model ", Model, ": Kurtosis", sep = "")
   }else if(transformation == "kurtosis (normality)"){
     title = paste("Model ", Model, ": Transf. Kurtosis", sep = "")
   }
-
 
   # Get a data sample
   Y <- SignalPlusNoise( N  = 400,
@@ -142,12 +144,18 @@ plot_scbExamples <- function(Model, transformation, method = list(name = "GKF", 
                         mu = mu_model,
                         sigma = sigma_model,
                         noise = noise_model )
+  if( transformation == "cohensd" ){
+    seEst = "estimate"
+  }else{
+    seEst = rep(1, length(Y$locations))
+  }
 
   Y1 <- Y
   Y1$values <- Y$values[,1:100]
   scb_ModelA = scb_moments(Y1,
                            level          = .95,
                            transformation = transformation,
+                           se.est  = seEst,
                            method  = method )
 
   Y1 <- Y
@@ -155,6 +163,7 @@ plot_scbExamples <- function(Model, transformation, method = list(name = "GKF", 
   scb_ModelA2 = scb_moments(Y1,
                             level          = .95,
                             transformation = transformation,
+                            se.est  = seEst,
                             method  = method )
 
   data = cbind(x, scb_ModelA$scb)
@@ -173,19 +182,20 @@ plot_scbExamples <- function(Model, transformation, method = list(name = "GKF", 
             geom_line(aes(x = x, y = True), size = 1.2) +
             geom_ribbon(aes(x = x, ymin = SCB.low, ymax = SCB.up, fill = "N = 100"), alpha = 0.25) +
             geom_ribbon(aes(x = x, ymin = SCB.low, ymax = SCB.up, fill = "N = 400"), data = data2, alpha = 0.25) +
-            xlab( "" ) + ylab( "" ) +
+            xlab( "Spatial Index [s]" ) + ylab( "" ) +
             ggtitle(title) +
+            scale_y_continuous(labels=scaleFUN) +
             theme1)
   }else{
     print(ggplot(data) +
             geom_line(aes(x = x, y = True), size = 1.2) +
             geom_ribbon(aes(x = x, ymin = SCB.low, ymax = SCB.up, fill = "N = 100"), alpha = 0.25) +
             geom_ribbon(aes(x = x, ymin = SCB.low, ymax = SCB.up, fill = "N = 400"), data = data2, alpha = 0.25) +
-            xlab( "" ) + ylab( "" ) +
+            xlab( "Spatial Index [s]" ) + ylab( "" ) +
             ggtitle(title) +
+            scale_y_continuous(labels=scaleFUN) +
             theme2)
   }
-
   savePlot(filename = pngname)
   dev.off()
 

@@ -92,7 +92,7 @@ pngname <- paste( path_pics,
 X11(width = wvalue, height = hvalue)
 print( ggplot(relBias_d, aes(x, rel.bias, group = N, col = N)) +
          geom_line(size = sLine) +
-         xlab( "Location" ) +
+         xlab( "Spatial Index [s]" ) +
          ylab( "Relative Bias" ) +
          ggtitle( "Cohen's d" ) +
          theme2) +
@@ -108,7 +108,7 @@ pngname <- paste( path_pics,
 X11(width = wvalue, height = hvalue)
 print( ggplot(relBias_s, aes(x, rel.bias, group = N, col = N)) +
          geom_line(size = sLine) +
-         xlab( "Location" ) +
+         xlab( "Spatial Index [s]" ) +
          ylab( "Relative Bias" ) +
          ggtitle( "Skewness" ) +
          theme1 +
@@ -123,7 +123,7 @@ pngname <- paste( path_pics,
 X11(width = wvalue, height = hvalue)
 print( ggplot(relBias_sn, aes(x, rel.bias, group = N, col = N)) +
          geom_line(size = sLine) +
-         xlab( "Location" ) +
+         xlab( "Spatial Index [s]" ) +
          ylab( "Relative Bias" ) +
          ggtitle( "Transformed Skewness" ) +
          theme1 +
