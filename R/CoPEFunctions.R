@@ -182,7 +182,7 @@ outer_CoPEset <- function(hatmu, c, q, tN, hatsigma, inclusion = "inequal", mu =
 #' "equal", "inequal".
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
-CoPEsets <- function(hatmu, C, q, tN, hatsigma, inclusion = "inequalequal", mu = NULL, eps_correct = T ){
+CoPEsets <- function(hatmu, C, q, tN, hatsigma, inclusion = "inequalequal", mu = NULL, eps_correct = T){
   # Get the number of levels
   if(is.null(dim(C))){
     num_levels = 1
@@ -258,7 +258,10 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                                tN,
                                kN,
                                Mboots = 1e4,
-                               mu = NULL
+                               mu = NULL,
+                               fair = NULL,
+                               fair.type = "linear",
+                               niter  = 10
 ){
   #
   if(kN == 0 & !is.null(mu)){
@@ -277,12 +280,26 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                    tN = tN, kN = kN, type = "rel")
     Splus  = SC$S_p
     Sminus = SC$S_m
+
+    # Get the unfair threshold
     q = MultiplierBootstrapSplit(R = R, Splus = Splus,
                                  Sminus = Sminus,
                                  alpha  = alpha,
                                  Mboots = Mboots,
                                  method  = method,
                                  weights = weights)
+
+    # Get the optimized fair piecewise linear threshold
+    if(!is.null(fair)){
+      test = OptimizeFairThreshold1D(q$samples, x, fair,
+                                     fair.type = fair.type,
+                                     Splus  = Splus,
+                                     Sminus = Sminus,
+                                     alpha  = alpha,
+                                     niter  = niter)
+      q$q = test$q
+      q$EmpRejections = test$EmpRejections
+    }
 
     # ColorVector of estimated set
     colVecSet = rep("black", length(x))
@@ -293,12 +310,27 @@ CoPE_inference <- function(hatmu, hatsigma, R,
     SC = PreimageC(hatmu = estmu, C = C, hatsigma = hatsigma,
                    tN = tN, kN = kN, type = "selection")
 
+    if(is.null(fair)){
     q = MultiplierBootstrap(R = R[SC,],
                             alpha  = alpha,
                             Mboots = Mboots,
                             method  = method,
                             weights = weights)
-
+   }else{
+      q = MultiplierBootstrap(R = R,
+                             alpha  = alpha,
+                             Mboots = Mboots,
+                             method  = method,
+                             weights = weights)
+      test = OptimizeFairThreshold1D(q$samples, x, fair,
+                                     fair.type = fair.type,
+                                     Splus  = SC,
+                                     Sminus = SC,
+                                     alpha  = alpha,
+                                     niter  = niter )
+      q$q = test$q
+      q$EmpRejections = test$EmpRejections
+    }
     # ColorVector of estimated set
     colVecSet = rep("black", length(x))
     colVecSet[SC] = "red"
@@ -308,17 +340,36 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                    tN = tN, kN = kN, type = "rel")
     SCC = SC$S_p | SC$S_m
     if(sum(SCC) == 1){
+      # Get the threshold
       q = MultiplierBootstrap(R = t(R[SCC,]),
                               Mboots = Mboots,
                               alpha  = alpha,
                               method  = method,
                               weights = weights)
+
     }else if(sum(SCC) > 1){
-      q = MultiplierBootstrap(R = t(t(R[SCC,])),
-                            Mboots = Mboots,
-                            alpha  = alpha,
-                            method  = method,
-                            weights = weights)
+      if(is.null(fair)){# unfair threshold
+        q = MultiplierBootstrap(R = t(t(R[SCC,])),
+                                Mboots = Mboots,
+                                alpha  = alpha,
+                                method  = method,
+                                weights = weights)
+
+      }else{# fair threshold
+        q = MultiplierBootstrap(R = R,
+                                alpha  = alpha,
+                                Mboots = Mboots,
+                                method  = method,
+                                weights = weights)
+        test = OptimizeFairThreshold1D(q$samples, x, fair,
+                                       fair.type = fair.type,
+                                       Splus  = SCC,
+                                       Sminus = SCC,
+                                       alpha  = alpha,
+                                       niter  = niter)
+        q$q = test$q
+        q$EmpRejections = test$EmpRejections
+      }
     }else{
       q = list()
       q$q = 0
@@ -327,11 +378,22 @@ CoPE_inference <- function(hatmu, hatsigma, R,
     colVecSet = rep("black", length(x))
     colVecSet[SC$S_m | SC$S_p] = "red"
   }else if(type == "SCB"){
+    # Get the unfair threshold
     q = MultiplierBootstrap(R = R,
                             Mboots = Mboots,
                             alpha = alpha,
                             method  = method,
                             weights = weights)
+
+    # Get the optimized fair piecewise linear threshold
+    if(!is.null(fair)){
+      test = OptimizeFairThreshold1D(q$samples, x, fair,
+                                     fair.type = fair.type,
+                                     alpha  = alpha,
+                                     niter  = niter )
+      q$q = test$q
+      q$EmpRejections = test$EmpRejections
+    }
 
     # ColorVector of estimated set
     colVecSet = rep("black", length(x))

@@ -164,7 +164,7 @@ MultiplierBootstrap <- function( R,
                                  alpha   = 0.05,
                                  Mboots  = 5e3,
                                  method  = "t",
-                                 weights = "rademacher" ){
+                                 weights = "rademacher"){
 
   #---- Check user input and put default values
   # Check R
@@ -355,9 +355,11 @@ MultiplierBootstrap <- function( R,
     }
   }
 
+  q = quantile( distVec, 1 - alpha, type = 8 )
+
   #----- Return quantile and bootstrap distribution
   return( list( z       = distVec,
-                q       = quantile( distVec, 1 - alpha, type = 8 ),
+                q       = q,
                 samples = bootMeans / data.sigma * sqrt( N ) ) )
 }
 
@@ -484,13 +486,13 @@ MultiplierBootstrapSplit <- function( R,
         distVec1 <- sqrt( N ) * bootMeans[Splus,] / data.sigma[Splus,]
       }else if(sum(Splus) > 1){
         distVec1 <- sqrt( N ) * apply( t(t(bootMeans[Splus,])) / data.sigma[Splus,], 2, max )
-      }else{t(t(data.sigma[Splus,]))
+      }else{
         distVec1 <- rep(-Inf, Mboots)
       }
       if(sum(Sminus) == 1){
-        distVec2 <- sqrt( N ) * bootMeans[Sminus,] / data.sigma[Sminus,]
+        distVec2 <- -sqrt( N ) * bootMeans[Sminus,] / data.sigma[Sminus,]
       }else if(sum(Sminus) > 1){
-        distVec2 <- sqrt( N ) * apply( t(t(bootMeans[Sminus,])) / data.sigma[Sminus,], 2, max )
+        distVec2 <- -sqrt( N ) * apply( t(t(bootMeans[Sminus,])) / data.sigma[Sminus,], 2, max )
       }else{
         distVec2 <- rep(-Inf, Mboots)
       }
