@@ -34,50 +34,47 @@
 #'   thresholding function with respect to the sample.
 #' }
 #' @export
-FairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splus = rep(TRUE, length(x)), Sminus = rep(TRUE, length(x)), alpha = 0.95 ){
+FairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splus = rep(TRUE, length(x)), Sminus = rep(TRUE, length(x)), alpha = 0.95, diff.fair = NULL, subI = NULL ){
   # Get the length of the different intervals for the fairness
-  dfair = diff(fair)
+  if(is.null(diff.fair)){
+    dfair = diff(fair)
+  }else{
+    dfair = diff.fair
+  }
+  if(is.null(subI)){
+    subI = list()
+    for(k in 2:length(fair)){
+      subI[[k-1]] = which( x  >= fair[k-1] & x  <= fair[k] )
+    }
+  }
+
   dimS = dim(samples)
+  #  if(fair.type = "linear"){
+    samples_minus = -samples
+    samples_minus[!Sminus,] <- -Inf
+    samples_plus = samples
+    samples_plus[!Splus,]   <- -Inf
+    #}
 
     # initialize the quantile piecewise linear function
     q0 = -Inf
+
     # iterate over the different intervals
     for(k in 2:length(fair)){
+      # find indices within the k-th interval
+      subIk = subI[[k-1]]
+
       if(q0 == -Inf){
-        # Get the indices of x where the first interval is contained
-        subIk  = which( x  >= fair[k-1] & x  <= fair[k] )
-        xx = x
-        xx[!Splus] = Inf
-        subIk_Splus  = which( xx  >= fair[k-1] & xx  <= fair[k] )
-        xx = x
-        xx[!Sminus] = Inf
-        subIk_Sminus = which( xx >= fair[k-1] & xx <= fair[k] )
-
-        # Get the maximum over the first interval
-        if(length(subIk_Splus) == 1){
-          maxIk_Splus <- samples[subIk_Splus,]
-        }else if(length(subIk_Splus) > 1){
-          maxIk_Splus <- apply( samples[subIk_Splus,], 2, max )
-        }else{
-          maxIk_Splus <- rep(-Inf, Mboots)
-        }
-
-        if(length(subIk_Sminus) == 1){
-          maxIk_Sminus <- -samples[subIk_Sminus,]
-        }else if(length(subIk_Sminus) > 1){
-          maxIk_Sminus <- apply( -samples[subIk_Sminus,], 2, max )
-        }else{
-          maxIk_Sminus <- rep(-Inf, Mboots)
-        }
-
-        maxIk  <- apply( rbind(maxIk_Splus, maxIk_Sminus), 2, max )
+        # Get the local test statistic
+        maxIk = apply(rbind(apply(samples_minus[subIk,], 2, max),
+                            apply(samples_plus[subIk,], 2, max)), 2, max)
 
         if(k == 2){
           # Initialize the slope of the quantile function
-          mq = quantile( maxIk, 1 - alpha*dfair[1], type = 8 )
+          mq = quantile( maxIk, 1 - alpha*dfair[k-1], type = 8 )
 
           # Initialize the quantile function, which is piecewise linear!
-          qx = unlist(rep( mq, length(subIk)))
+          qx = unlist(rep(mq, length(subIk)))
 
           # Get back into this loop if type is not linear
           if(fair.type == "constant"){
@@ -87,7 +84,7 @@ FairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splus = rep(
           }
 
         }else{
-          mq <- c( mq, quantile( maxIk, 1 - alpha*dfair[k-1], type = 8 ) )
+          mq <- c( mq, quantile( maxIk, 1 - alpha * dfair[k-1], type = 8 ) )
           qx <- c( qx, rep(mq[k-1], length(subIk)) )
 
           # Update the quantile function, the slope and the starting point for next iteration
@@ -97,51 +94,43 @@ FairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splus = rep(
         }
 
       }else{
-        # find indices within the k-th interval
-        subIk  = which( x  >= fair[k-1] & x  <= fair[k] )
-        #samples_Ik = samples[subIk,]
 
-        xx = x
-        xx[!Splus] = Inf
-        PlusSet <- ( xx  >= fair[k-1] & xx  <= fair[k] )
-        subIk_Splus  = which( PlusSet )
-        xx = x
-        xx[!Sminus] = Inf
-        MinusSet <- ( xx >= fair[k-1] & xx <= fair[k] )
-        subIk_Sminus = which( MinusSet )
+        maxFun <- matrix(mapply(max, samples_plus[subIk,],
+                                samples_minus[subIk,]),
+                         length(subIk), dimS[2])
 
-          sample_minus = -samples
-          sample_minus[!MinusSet,] <- -Inf
-          sample_plus = samples
-          sample_plus[!PlusSet,]   <- -Inf
-          maxFun <- matrix(mapply(max, sample_plus, sample_minus), dimS[1], dimS[2])
-          maxFun = maxFun[subIk,]
-
-          # define the function, which finds the optimal slope for the correct rejection rate
-          solvef <- function(l){
-            mean(apply( maxFun - q0 - l *(x[subIk] - x[subIk[1]-1] ) > 0, 2, any)) - alpha * dfair[k-1]
-          }
-          # optimize the rejection rate function
-          if( all(!PlusSet) && all(!MinusSet) ){
-            qk <- list()
-            qk$root <- -Inf
-          }else{
-            qk <- uniroot(solvef,interval = c(-100, 100))
-          }
-          # Update the quantile function, the slope and the starting point for next iteration
-          mq <- c(mq, qk$root)
-          qx = c(qx, q0 + qk$root * (x[subIk] - x[subIk[1]-1]))
-          q0 = q0 + qk$root * dfair[k-1]
-
+        # define the function, which finds the optimal slope for the correct rejection rate
+        solvef <- function(l){
+          mean(apply( maxFun - q0 - l *(x[subIk] - x[subIk[1]-1] ) > 0, 2, any)) - alpha * dfair[k-1]
+        }
+        # optimize the rejection rate function
+        if( all(is.infinite(maxFun)) ){
+          qk <- list()
+          qk$root <- -Inf
+        }else{
+          qk <- uniroot(solvef,interval = c(-100, 100))
+        }
+        # Update the quantile function, the slope and the starting point for next iteration
+        mq <- c(mq, qk$root)
+        qx = c(qx, q0 + qk$root * (x[subIk] - x[subIk[1]-1]))
+        q0 = q0 + qk$root * dfair[k-1]
       }
     }
 
+    # Interval counter to later fill not important intervals
+    if(any(is.infinite(mq))){
+      qx[is.infinite(qx)] = NA
+      if(is.na(qx[1])){
+        qx[1] = 0
+      }
+      Eqx = length(qx)
+      if(is.na(qx[Eqx])){
+        qx[Eqx] = 0
+      }
+      qx = na.approx(qx)
+    }
     # Compute the empirical rejection rate of the quantile function on the given sample
-    sample_minus = -samples
-    sample_minus[!Sminus,] <- -Inf
-    sample_plus = samples
-    sample_plus[!Splus,]   <- -Inf
-    maxFun <- matrix(mapply(max, sample_plus, sample_minus), dimS[1], dimS[2])
+    maxFun <- matrix(mapply(max, samples_plus, samples_minus), dimS[1], dimS[2])
     diffmFunqx = maxFun - qx
     diffmFunqx[which(is.nan(diffmFunqx))] = 0
 
@@ -171,30 +160,65 @@ FairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splus = rep(
 #'   thresholding function with respect to the sample.
 #' }
 #' @export
-OptimizeFairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splus = rep(TRUE, length(x)), Sminus = rep(TRUE, length(x)), alpha = 0.95, niter = 10, print.coverage = TRUE ){
+OptimizeFairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splus = rep(TRUE, length(x)), Sminus = rep(TRUE, length(x)), alpha = 0.95, niter = 10, subI = NULL, print.coverage = TRUE ){
+  # Get the weighting for the interval, by removing empty intervals
+  if(!all(Splus) || !all(Sminus)){
+    count = 0
+    dd = diff(fair)
+    diff.fair = 0*(1:length(dd))
+    for(k in 2:length(fair)){
+      if(is.null(subI)){
+        subIk = which( x  >= fair[k-1] & x  <= fair[k] )
+      }else{
+        subIk = subI[[k-1]]
+      }
+      if( any(Splus[subIk]) || any(Sminus[subIk]) ){
+        diff.fair[k-1] <- dd[k-1]
+        count = count + 1
+      }
+    }
+    diff.fair = diff.fair * (length(diff.fair)) / count
+    if(fair.type == "linear"){
+      vv = (diff.fair == 0)
+      diff.fair[vv] = Inf
+      if(vv[1] == TRUE){
+        diff.fair[vv] = 0
+      }
+    }
+  }else{
+    diff.fair = diff(fair)
+  }
+
   # Compute the fair threshold function
-  test = FairThreshold1D(samples, x, fair, fair.type = fair.type, Splus = Splus, Sminus = Sminus, alpha )
+  test = FairThreshold1D(samples, x, fair, fair.type = fair.type, Splus = Splus, Sminus = Sminus, alpha, diff.fair = diff.fair )
 
   # Initialize values for computing the fair threshold function
   count = 0
   breakCond = FALSE
   oldEmp    = test$EmpRejections
+  eps = max(alpha * 0.025, 10/dim(samples)[2])
 
   # Loop to remove conservativeness of the fair threshold function
   while(breakCond == FALSE && count <= niter){
     diffCoverage = oldEmp - alpha
-    if(  abs(diffCoverage) > alpha * 0.025 ){
+    if(  abs(diffCoverage) > eps ){
       if(count == 0){
         if(diffCoverage < 0){
-          a = c(alpha, 3 * alpha)
+          a = c(alpha, 2.5 * alpha)
         }else{
           a = c(0.5 * alpha, alpha)
         }
       }else{
         if(diffCoverage < 0){
           a[1] = alpha_new
+          if(a[1] == a[2]){
+            a[2] = 1.5 * a[2]
+          }
         }else{
           a[2] = alpha_new
+          if(a[1] == a[2]){
+            a[1] = 0.7 * a[1]
+          }
         }
       }
 
@@ -202,7 +226,9 @@ OptimizeFairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splu
       alpha_new = mean(a)
 
       # Get new quantile function
-      test   = FairThreshold1D(samples, x, fair, fair.type = fair.type, Splus = Splus, Sminus = Sminus, alpha_new )
+      test   = FairThreshold1D(samples, x, fair, fair.type = fair.type,
+                               Splus = Splus, Sminus = Sminus,
+                               alpha_new, diff.fair = diff.fair )
       count  = count + 1
       oldEmp = test$EmpRejections
       if(print.coverage){
@@ -212,6 +238,9 @@ OptimizeFairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splu
       breakCond = TRUE
     }
   }
+
+  test$loc_alpha = alpha_new * diff.fair
+
   # return the results
   return(test)
 }

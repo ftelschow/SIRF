@@ -34,33 +34,34 @@
 #' }
 #' @export
 PreimageC <- function(hatmu, C, hatsigma, tN, kN = log(tN^-2) / 5, type = "extraction"){
+  dC = dim(C)
   if(type %in% c("rel", "out", "eqv")){
     # Construct the threshold of the CoPE set
     if(type == "rel"){
-      Delta = min(min(abs(C[,1] - hatmu)), min(abs(hatmu - C[,2])))
+      Delta = min(min(abs(C[,1] - hatmu)), min(abs(hatmu - C[,dC[2]])))
       cm = C[,1] + Delta
-      cp = C[,2] - Delta
+      cp = C[,dC[2]] - Delta
 
       updn <- c(diff(sign(hatmu-C[,1])), 0)
       ix <- which(updn != 0)
       ixm = vapply(ix, function(v){ ifelse( which.min(c(abs(hatmu[v]-C[v,1]),
                                       abs(hatmu[v+1]-C[v+1,1]))) == 1,
                                       v, v+1)}, FUN.VALUE = 1 )
-      updn <- c(diff(sign(hatmu-C[,2])), 0)
+      updn <- c(diff(sign(hatmu-C[,dC[2]])), 0)
       ix <- which(updn != 0)
-      ixp = vapply(ix, function(v){ ifelse( which.min(c(abs(hatmu[v]-C[v,2]),
-                                                        abs(hatmu[v+1]-C[v+1,2]))) == 1,
+      ixp = vapply(ix, function(v){ ifelse( which.min(c(abs(hatmu[v]-C[v,dC[2]]),
+                                                        abs(hatmu[v+1]-C[v+1,dC[2]]))) == 1,
                                             v, v+1)}, FUN.VALUE = 1 )
 
     }else if(type == "out"){
-      Delta = min(min(abs(C[,1] - hatmu)), min(abs(hatmu - C[,2])))
+      Delta = min(min(abs(C[,1] - hatmu)), min(abs(hatmu - C[,dC[2]])))
       cm = C[,1] - Delta
-      cp = C[,2] + Delta
+      cp = C[,dC[2]] + Delta
       ixm <- ixp <- NULL
     }else if(type == "eqv"){
-      Delta = max(max(C[,1] - hatmu), max(hatmu - C[,2]))
+      Delta = max(max(C[,1] - hatmu), max(hatmu - C[,dC[2]]))
       cm = C[,1] - Delta
-      cp = C[,2] + Delta
+      cp = C[,dC[2]] + Delta
       ixm <- ixp <- NULL
     }
 
@@ -82,12 +83,12 @@ PreimageC <- function(hatmu, C, hatsigma, tN, kN = log(tN^-2) / 5, type = "extra
     M = (C - tN * kN * hatsigma <= hatmu) & (hatmu <= C + tN * kN * hatsigma)
     out = list(
       S_p = M[,1],
-      S_m = M[,2]
+      S_m = M[,dC[2]]
     )
     return( out )
     # return( apply(M, 1, any) )
   }else if(type == "selection"){
-    return( (C[,1] - tN * kN * hatsigma <= hatmu) & (hatmu <= C[,2] + tN * kN * hatsigma) )
+    return( (C[,1] - tN * kN * hatsigma <= hatmu) & (hatmu <= C[,dC[2]] + tN * kN * hatsigma) )
   }
 }
 
@@ -182,7 +183,7 @@ outer_CoPEset <- function(hatmu, c, q, tN, hatsigma, inclusion = "inequal", mu =
 #' "equal", "inequal".
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
-CoPEsets <- function(hatmu, C, q, tN, hatsigma, inclusion = "inequalequal", mu = NULL, eps_correct = T){
+CoPEsets <- function(hatmu, C, q, tN, hatsigma, inclusion = "inequalequal", mu = NULL, eps_correct = T, subI = NULL){
   # Get the number of levels
   if(is.null(dim(C))){
     num_levels = 1
@@ -190,6 +191,15 @@ CoPEsets <- function(hatmu, C, q, tN, hatsigma, inclusion = "inequalequal", mu =
   }else{
     num_levels = dim(C)[2]
   }
+
+  if(is.null(subI)){
+    subI = list()
+    for(k in 2:length(fair)){
+      subI[[k-1]] = which( x  >= fair[k-1] & x  <= fair[k] )
+    }
+  }
+
+
 
   # Initialize matrizes for the CoPE sets and for the rejections
   innerSet <- outerSet <- matrix(NaN, length(hatmu), num_levels)
@@ -261,7 +271,9 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                                mu = NULL,
                                fair = NULL,
                                fair.type = "linear",
-                               niter  = 10
+                               niter  = 10,
+                               subI = NULL,
+                               print.coverage = TRUE
 ){
   #
   if(kN == 0 & !is.null(mu)){
@@ -273,6 +285,16 @@ CoPE_inference <- function(hatmu, hatsigma, R,
     method = "t"
     weights = "rademacher"
   }
+
+  if(is.null(subI) && !is.null(fair)){
+    subI = list()
+    for(k in 2:length(fair)){
+      subI[[k-1]] = which( x  >= fair[k-1] & x  <= fair[k] )
+    }
+  }else{
+    subI = NULL
+  }
+
 
   # Estimate the quantile. This requires estimation of the critical set
   if(type == "extraction"){
@@ -296,7 +318,9 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                                      Splus  = Splus,
                                      Sminus = Sminus,
                                      alpha  = alpha,
-                                     niter  = niter)
+                                     niter  = niter,
+                                     print.coverage = print.coverage,
+                                     subI = subI)
       q$q = test$q
       q$EmpRejections = test$EmpRejections
     }
@@ -327,7 +351,9 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                                      Splus  = SC,
                                      Sminus = SC,
                                      alpha  = alpha,
-                                     niter  = niter )
+                                     niter  = niter,
+                                     print.coverage = print.coverage,
+                                     subI = subI )
       q$q = test$q
       q$EmpRejections = test$EmpRejections
     }
@@ -366,7 +392,9 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                                        Splus  = SCC,
                                        Sminus = SCC,
                                        alpha  = alpha,
-                                       niter  = niter)
+                                       niter  = niter,
+                                       print.coverage = print.coverage,
+                                       subI = subI)
         q$q = test$q
         q$EmpRejections = test$EmpRejections
       }
@@ -390,13 +418,21 @@ CoPE_inference <- function(hatmu, hatsigma, R,
       test = OptimizeFairThreshold1D(q$samples, x, fair,
                                      fair.type = fair.type,
                                      alpha  = alpha,
-                                     niter  = niter )
+                                     niter  = niter,
+                                     print.coverage = print.coverage,
+                                     subI = subI)
       q$q = test$q
       q$EmpRejections = test$EmpRejections
     }
 
     # ColorVector of estimated set
-    colVecSet = rep("black", length(x))
+    colVecSet = rep("red", length(x))
+  }
+
+  # Modify C such that it not automatically rejects, if q is -Inf because there
+  # are no elements of S_C
+  if(!is.null(fair)){
+    C[which(is.infinite(q$q)), ] = -Inf
   }
 
   # Get the CoPE sets
@@ -408,17 +444,30 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                    mu = mu)
 
   colVecCoPE = rep("black", length(x))
-  colVecCoPE[!!coPE$innerSet[,2]] = "red"
+  colVecCoPE[!!coPE$innerSet[,dim(coPE$innerSet)[2]]] = "red"
   colVecCoPE[!coPE$outerSet[,1]]  = "blue"
   Reject = list()
   Reject$low = which(!coPE$outerSet[,1])
-  Reject$up  = which(!!coPE$innerSet[,2])
+  Reject$up  = which(!!coPE$innerSet[,dim(coPE$innerSet)[2]])
 
-  list(Reject  = Reject,
-       CoPEcol = colVecCoPE,
-       SetCol  = colVecSet,
-       CoPE    = coPE,
-       q = q)
+  if(is.null(fair)){
+    list(Reject  = Reject,
+         CoPEcol = colVecCoPE,
+         SetCol  = colVecSet,
+         CoPE    = coPE,
+         q = q,
+         CoPE_bands = hatmu + tN * q$q * cbind(-hatsigma, hatsigma))
+  }else{
+    list(Reject  = Reject,
+         CoPEcol = colVecCoPE,
+         SetCol  = colVecSet,
+         CoPE    = coPE,
+         q       = q,
+         C       = C,
+         loc_alpha  = test$loc_alpha,
+         CoPE_bands = hatmu + tN *  cbind(-q$q * hatsigma, q$q * hatsigma) )
+  }
+
 }
 
 #' This functions enables different inference for 1D fields using
