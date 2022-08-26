@@ -289,7 +289,10 @@ CoPE_inference <- function(hatmu, hatsigma, R,
   if(is.null(subI) && !is.null(fair)){
     subI = list()
     for(k in 2:length(fair)){
-      subI[[k-1]] = which( x  >= fair[k-1] & x  <= fair[k] )
+      subI[[k-1]] = which( fair[k-1] <= x & x < fair[k] )
+      if(k == length(fair)){
+        subI[[k-1]] = c(subI[[k-1]], length(x))
+      }
     }
   }else{
     subI = NULL
@@ -458,13 +461,18 @@ CoPE_inference <- function(hatmu, hatsigma, R,
          q = q,
          CoPE_bands = hatmu + tN * q$q * cbind(-hatsigma, hatsigma))
   }else{
+    if("test" %in% ls()){
+      loc_alpha  = test$loc_alpha
+    }else{
+      loc_alpha  = alpha
+    }
     list(Reject  = Reject,
          CoPEcol = colVecCoPE,
          SetCol  = colVecSet,
          CoPE    = coPE,
          q       = q,
          C       = C,
-         loc_alpha  = test$loc_alpha,
+         loc_alpha  = loc_alpha,
          CoPE_bands = hatmu + tN *  cbind(-q$q * hatsigma, q$q * hatsigma) )
   }
 
