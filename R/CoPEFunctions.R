@@ -183,7 +183,7 @@ outer_CoPEset <- function(hatmu, c, q, tN, hatsigma, inclusion = "inequal", mu =
 #' "equal", "inequal".
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
-CoPEsets <- function(hatmu, C, q, tN, hatsigma, inclusion = "inequalequal", mu = NULL, eps_correct = T, subI = NULL){
+CoPEsets <- function(hatmu, C, q, tN, hatsigma, inclusion = "inequalequal", mu = NULL, eps_correct = T){
   # Get the number of levels
   if(is.null(dim(C))){
     num_levels = 1
@@ -191,15 +191,6 @@ CoPEsets <- function(hatmu, C, q, tN, hatsigma, inclusion = "inequalequal", mu =
   }else{
     num_levels = dim(C)[2]
   }
-
-  if(is.null(subI)){
-    subI = list()
-    for(k in 2:length(fair)){
-      subI[[k-1]] = which( x  >= fair[k-1] & x  <= fair[k] )
-    }
-  }
-
-
 
   # Initialize matrizes for the CoPE sets and for the rejections
   innerSet <- outerSet <- matrix(NaN, length(hatmu), num_levels)
@@ -261,7 +252,7 @@ CoPEsets <- function(hatmu, C, q, tN, hatsigma, inclusion = "inequalequal", mu =
 #' @param title Vector grid for evaluation of the smoothed field
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
-CoPE_inference <- function(hatmu, hatsigma, R,
+CoPE_inference <- function(hatmu, hatsigma, R, x = seq(0,1, length(hatmu)),
                                type,
                                C,
                                alpha  = 0.05,
@@ -275,6 +266,11 @@ CoPE_inference <- function(hatmu, hatsigma, R,
                                subI = NULL,
                                print.coverage = TRUE
 ){
+  # CHeck whether R is an array
+  if(attributes(R)$class == "data.frame"){
+    R <- data.matrix(R, rownames.force = FALSE)
+  }
+
   #
   if(kN == 0 & !is.null(mu)){
     estmu = mu
@@ -439,10 +435,10 @@ CoPE_inference <- function(hatmu, hatsigma, R,
   }
 
   # Get the CoPE sets
-  coPE <- CoPEsets(hatmu = mY,
+  coPE <- CoPEsets(hatmu = hatmu,
                    C = C,
                    q = q$q,
-                   hatsigma = sdY,
+                   hatsigma = hatsigma,
                    tN = tN,
                    mu = mu)
 
@@ -473,7 +469,9 @@ CoPE_inference <- function(hatmu, hatsigma, R,
          q       = q,
          C       = C,
          loc_alpha  = loc_alpha,
-         CoPE_bands = hatmu + tN *  cbind(-q$q * hatsigma, q$q * hatsigma) )
+         CoPE_bands = hatmu + tN *  cbind(-q$q * hatsigma, q$q * hatsigma),
+         fair       = fair,
+         fair.type  = fair.type)
   }
 
 }
@@ -485,6 +483,7 @@ CoPE_inference <- function(hatmu, hatsigma, R,
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
 Dette_inference <- function(hatmu, hatsigma, R,
+                            x = seq(0,1,length(mu)),
                            C,
                            alpha  = 0.05,
                            tN,
@@ -492,6 +491,11 @@ Dette_inference <- function(hatmu, hatsigma, R,
                            Mboots = 1e4,
                            mu = NULL
 ){
+  # Check whether R is an array
+  if(attributes(R)$class == "data.frame"){
+    R <- data.matrix(R, rownames.force = FALSE)
+  }
+
   # Get the critical set of Dette
   SC = hatE_pm(hatmu = hatmu, C = C, hatsigma = hatsigma, tN = tN, kN = kN)
   Splus  = SC$S_p
@@ -512,10 +516,10 @@ Dette_inference <- function(hatmu, hatsigma, R,
   T_hatmu = max(max(-hatmu + C[,1]), max(hatmu - C[,2]))
 
   # Compute the CoPE sets for completeness
-  coPE <- CoPEsets(hatmu = mY,
+  coPE <- CoPEsets(hatmu = hatmu,
                    C = C,
                    q = q$q,
-                   hatsigma = sdY,
+                   hatsigma = hatsigma,
                    tN = tN,
                    mu = mu)
 
