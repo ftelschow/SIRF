@@ -115,8 +115,9 @@ FairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splus = rep(
       }
       # Update the quantile function, the slope and the starting point for next iteration
       mq <- c(mq, qk$root)
-      qx = c(qx, q0 + qk$root * (x[subIk] - x[subIk[1]-1]))
-      q0 = q0 + qk$root * dfair[k-1]
+      qx <- c(qx, q0 + qk$root * (x[subIk] - x[subIk[1]-1]))
+      # q0 = q0 + qk$root * dfair[k-1]
+      q0 = qx[length(qx)]
       if(is.nan(q0)){
         q0 = -Inf
       }
@@ -128,11 +129,11 @@ FairThreshold1D <- function(samples, x, fair, fair.type = "linear", Splus = rep(
     if(fair.type == "linear"){
       qx[is.infinite(qx)] = NA
       if(is.na(qx[1])){
-        qx[1] = 0
+        qx[1] = mean(qx, na.rm = TRUE)
       }
       Eqx = length(qx)
       if(is.na(qx[Eqx])){
-        qx[Eqx] = 0
+        qx[Eqx] = mean(qx, na.rm = TRUE)
       }
       qx = na.approx(qx)
     }else{
@@ -219,7 +220,7 @@ OptimizeFairThreshold1D <- function(samples,
   count = 0
   breakCond = FALSE
   oldEmp    = test$EmpRejections
-  eps = max(alpha * 0.025, 10/dim(samples)[2])
+  eps = max(alpha * 0.05, 10/dim(samples)[2])
   alpha_new = alpha
 
   # Loop to remove conservativeness of the fair threshold function

@@ -167,18 +167,20 @@ scb_moments <- function(Y,
 
   #----- Compute the SCB
   # Get the se estimate or use the true for Gaussian data
-  if(se.est == "estimate"){
-    se  <- sqrt(N / (N - 1)) * residuals$delta.sd / sqrt(N)
-  }else if(se.est == "asymptotic gaussian"){
-    if(transformation == "cohensd"){
-      se <- sqrt(1 + residuals$statistic^2 / 2) / sqrt(N)
-    }else if(transformation == "skewness"){
-      se <- 6 / sqrt(N)
-    }else if(transformation %in% c("kurtosis", "kurtosis (unbiased)")){
-      se <- 24 / sqrt(N)
+  if(is.character(se.est)){
+    if(se.est == "estimate"){
+      se  <- sqrt(N / (N - 1)) * residuals$delta.sd / sqrt(N)
+    }else if(se.est == "asymptotic gaussian"){
+      if(transformation == "cohensd"){
+        se <- sqrt(1 + residuals$statistic^2 / 2) / sqrt(N)
+      }else if(transformation == "skewness"){
+        se <- 6 / sqrt(N)
+      }else if(transformation %in% c("kurtosis", "kurtosis (unbiased)")){
+        se <- 24 / sqrt(N)
+      }
+    }else if(se.est == "exact gaussian"){
+        se <- se_Gaussian(transformation, N, hatd = residuals$statistic)
     }
-  }else if(se.est == "exact gaussian"){
-      se <- se_Gaussian(transformation, N, hatd = residuals$statistic)
   }else{
     se <- se.est / sqrt(N)
   }

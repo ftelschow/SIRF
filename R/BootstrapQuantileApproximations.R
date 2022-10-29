@@ -68,7 +68,7 @@ ParametricBootstrap <- function( A,
 
   # Check method
   if( is.character( method ) ){
-    if( !( method %in% c( "t", "regular" ) ) ){
+    if( !( method %in% c( "t", "regular", "stat" ) ) ){
       stop( "Please, specify a valid choice for 'method'. Options are 't' and 'regular'.")
     }
   }else{
@@ -90,15 +90,19 @@ ParametricBootstrap <- function( A,
   if( D == 1 ){
     # Bootstrapped and original means
     bootMeans <- A %*% counter / N
-    meanA     <- rowMeans(A)
 
     # Estimate the variance from the sample
     if( method == "regular" ){
       data.sigma <- sqrt( matrixStats::rowVars( A ) )
+      meanA     <- rowMeans(A)
     }else if( method == "t" ){
+      meanA     <- rowMeans(A)
       bootSecMoments <- A^2 %*% counter / N
       # We put an abs here to make sure that no NaNs are produced due to machine precision error.
       data.sigma <- sqrt( ( N / ( N - 1 ) ) * abs( bootSecMoments - bootMeans^2 ) )
+    }else if( method == "stat"){
+      meanA <- 0
+      data.sigma <- 1
     }
 
     # Bootstrap realisations of the maximum of the t-field approximation
@@ -389,14 +393,14 @@ MultiplierBootstrap <- function( R,
 #'   \item q alpha-quantile value of z
 #' }
 #' @export
-MultiplierBootstrapSplit <- function( R,
-                                 Splus,
-                                 Sminus,
-                                 Q = NULL,
-                                 alpha   = 0.05,
-                                 Mboots  = 5e3,
-                                 method  = "t",
-                                 weights = "rademacher" ){
+MultiplierBootstrapSplit <- function(R,
+                                     plus,
+                                     minus,
+                                     Q = NULL,
+                                     alpha   = 0.05,
+                                     Mboots  = 5e3,
+                                     method  = "t",
+                                     weights = "rademacher" ){
 
   #---- Check user input and put default values
   # Check R
@@ -482,17 +486,17 @@ MultiplierBootstrapSplit <- function( R,
       }
 
       # Compute bootstrap distribution of the maximum
-      if(sum(Splus) == 1){
-        distVec1 <- sqrt( N ) * bootMeans[Splus,] / data.sigma[Splus,]
-      }else if(sum(Splus) > 1){
-        distVec1 <- sqrt( N ) * apply( t(t(bootMeans[Splus,])) / data.sigma[Splus,], 2, max )
+      if(sum(plus) == 1){
+        distVec1 <- sqrt( N ) * bootMeans[plus,] / data.sigma[plus,]
+      }else if(sum(plus) > 1){
+        distVec1 <- sqrt( N ) * apply( t(t(bootMeans[plus,])) / data.sigma[plus,], 2, max )
       }else{
         distVec1 <- rep(-Inf, Mboots)
       }
-      if(sum(Sminus) == 1){
-        distVec2 <- -sqrt( N ) * bootMeans[Sminus,] / data.sigma[Sminus,]
-      }else if(sum(Sminus) > 1){
-        distVec2 <- -sqrt( N ) * apply( t(t(bootMeans[Sminus,])) / data.sigma[Sminus,], 2, max )
+      if(sum(minus) == 1){
+        distVec2 <- -sqrt( N ) * bootMeans[minus,] / data.sigma[minus,]
+      }else if(sum(minus) > 1){
+        distVec2 <- -sqrt( N ) * apply( t(t(bootMeans[minus,])) / data.sigma[minus,], 2, max )
       }else{
         distVec2 <- rep(-Inf, Mboots)
       }
