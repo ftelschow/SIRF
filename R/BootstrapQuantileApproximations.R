@@ -496,7 +496,7 @@ MultiplierBootstrapSplit <- function(R,
       if(sum(minus) == 1){
         distVec2 <- -sqrt( N ) * bootMeans[minus,] / data.sigma[minus,]
       }else if(sum(minus) > 1){
-        distVec2 <- -sqrt( N ) * apply( t(t(bootMeans[minus,])) / data.sigma[minus,], 2, max )
+        distVec2 <- sqrt( N ) * apply( -t(t(bootMeans[minus,])) / data.sigma[minus,], 2, max )
       }else{
         distVec2 <- rep(-Inf, Mboots)
       }

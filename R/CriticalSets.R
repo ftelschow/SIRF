@@ -67,15 +67,35 @@ PreimageC <- function(C,
 
   # Get the estimate of the preimages from the estimated
   # preimages of C for the different methods
-  if(method %in% c("extraction", "lrelevance", "relevance",
+  if(method %in% c("lrelevance", "relevance",
                    "lequivalence", "equivalence")){
-    # Get the estimate of the preimage for each col \in C
+    if(dC[2] != 2){
+      stop("C must have exactly two columns defining the tube of interest.")
+    }
+    # Get the estimate of the preimage for the two boundary functions
     M = (C[, c(1, dC[2])] - hatmu <= tN * kN * hatsigma) &
               (hatmu - C[, c(1, dC[2])] <= tN * kN * hatsigma)
 
     hatmu1_C = list(minus = M[, 1], plus  = M[, 2])
 
-  }else if(method == "selection"){
+  }else if(method == "extraction"){
+    # Get the estimate of the preimage for each col \in C
+    M = (C[, c(1, dC[2])] - hatmu <= tN * kN * hatsigma) &
+                (hatmu - C[, c(1, dC[2])] <= tN * kN * hatsigma)
+
+    hatmu1_C = list(minus = M[, 1], plus  = M[, 2])
+
+    # Get the estimate of the preimage for each col \in C
+    M = (C - hatmu <= tN * kN * hatsigma) & (hatmu - C <= tN * kN * hatsigma)
+    if(dC[2] > 1 && dC[2] %% 2 == 0){
+      hatmu1_C = list(minus = apply(t(t(M[, seq(1, dC[2], 2)])), 1, any),
+                      plus  = apply(t(t(M[, seq(2, dC[2], 2)])), 1, any))
+    }else if(dC[2] == 1){
+      hatmu1_C = list(minus = M, plus  = M)
+    }else{
+      stop("The number of columns in C must be even to define tubes!")
+    }
+  }else if(method %in% c("selection", "classical")){
     # Get the estimate of the preimage for each col \in C
     M = (C[, 1] - hatmu <= tN * kN * hatsigma) &
               (hatmu - C[, dC[2]] <= tN * kN * hatsigma)

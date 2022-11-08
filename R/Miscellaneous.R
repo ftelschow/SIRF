@@ -349,3 +349,60 @@ scaleField <- function(Y,
   }
   return( ScaleField )
 }
+
+
+#' Computes the scale field for a sample of 1d functional data
+#'
+#' @param Y Matrix containing the data. Last dimension must indicate different samples.
+#' @param xeval Vector grid for evaluation of the smoothed field
+#' @param h Vector grid for the bandwidths for local linear smoothing or spacing between the knots in B-spline smoothing
+#' @param method String Either 'loclin' for local linear smoothing or 'smoothingspline' for Bspline smoothing
+#' @param kernel Function the kernel used for smoothing the data
+#' @param Weights Matrix containing a smoothing matrix. If specified all other parameters for smoothing are ignored.
+#' @return Scale field
+#' @export
+method_gen <- function(name, SCoPEStype, mu1est, N, kN, ...){
+  arguments = ls()
+  q_method <- list(
+    name = name,
+    SCoPEStype = SCoPEStype,
+    mu1Cest    = mu1est,
+    kN         = kN
+  )
+  # q estimation specification
+  if(name == "t"){
+    q_method$df = N-1
+  }else if(name == "mboot"){
+    if(!("Boottype" %in% arguments)){
+      Boottype = "t"
+    }
+    if(!("weights" %in% arguments)){
+      weights = "rademacher"
+    }
+    if(!("Mboots" %in% arguments)){
+      Mboots = 5e3
+    }
+    q_method$Boottype   = Boottype
+    q_method$weights    = weights
+    q_method$Mboots     = Mboots
+    q_method$R          = R
+  }
+  return(q_method)
+}
+
+#' @export
+plot_col <- function(statistic, C, detect, x = NULL,
+                     xlab = '', ylab = '', title = '',
+                     mu = NULL){
+  if(is.null(x)){
+    x = 1:length(statistic)
+  }
+  y = statistic
+  # Get a color vector indicating the "red" (upper excursions) and
+  # the blue (lower excursions) set
+  colVec <- rep("black", length(y))
+  colVec[detect] <- "red"
+  plot(x, y, col = colVec,
+       pch = 18, xlab = xlab, ylab = ylab, main = title)
+  lines(x, C, lty = 2, col = "orchid3")
+}
