@@ -1,0 +1,120 @@
+#------------------------------------------------------------------------------#
+#                                                                              #
+#     Insignificance values
+#                                                                              #
+#------------------------------------------------------------------------------#
+# Contained functions:
+#
+#
+#------------------------------------------------------------------------------#
+# Developer notes:
+#
+#------------------------------------------------------------------------------#
+#' This functions computes some possible insignificance values.
+#'
+#' @inheritParams PreimageC
+#' @param SCoPEStype vector of same length as mu giving the possible alternative
+#' @param Delta
+#' @return quantile of the maximum of the random variables
+#' @export
+IVobs <- function(scopes, method){
+  #
+  dC = dim(scopes$C)
+  if(dC[2]==1){
+    scopes$C = cbind(scopes$C,scopes$C)
+  }else if(dC[2]>2){
+    stop("Currently only one tube is supported.")
+  }
+
+  if(method$name == "gauss"){
+    return(IVs_IID(scopes))
+  }else if(method$name == "t"){
+    return(IVs_IID(scopes,
+                   cdf = pt,
+                   cdf_abs = function(q) extraDistr::pht(q, nu = method$df),
+                   df = method$df))
+  }else if(method$name == "mboot"){
+    # # Get a bootstrap sample
+    # mBoot <- MultiplierBootstrapSplit(R = method$R,
+    #                                   rep(TRUE, length(scopes$hatmu)),
+    #                                   rep(TRUE, length(scopes$hatmu)),
+    #                                   alpha   = 0.05,
+    #                                   Mboots  = method$Mboots,
+    #                                   method  = method$Boottype,
+    #                                   weights = method$weights)
+    # # Compute the local insignificance values
+    # IV1 <- rep(NaN, length(scopes$hatmu))
+    # if(sum(index_) != 0){
+    #   IV1[scopes$hatLC[, 1]] <- apply(C[scopes$hatLC[, 1], 1] - mBoot$samples[scopes$hatLC[, 1],] <=
+    #                                     scopes$hatmu[scopes$hatLC[, 1]], 1, mean )
+    # }
+    # if(sum(scopes$hatUC[, 2]) != 0){
+    #   IV1[scopes$hatUC[, 2]] <- apply(C[scopes$hatUC[, 2], 2] + mBoot$samples[scopes$hatUC[,2],] >=
+    #                                     scopes$hatmu[scopes$hatUC[,2]], 1, mean )
+    # }
+    #
+    # # Compute the extreme values
+    # IV2 <- 1 - mean(apply(abs(mBoot$samples[index,]) < abs(hatmu[index]), 2, all))
+  }else{
+    stop("Currently not implemented for the method you request.")
+  }
+}
+
+
+#' This functions computes the observational insignificance value (p-value )
+#' for an IID Gaussian model the maximum of combinations of statistics of the form
+#' -X[i], X[i] or |X[i]| where for {1,...,I} the random variables X[i] are
+#' independently standard Gaussian distribtued.
+#'
+#' @inheritParams PreimageC
+#' @param SCoPEStype vector of same length as mu giving the possible alternative
+#' @param cdf a cummulative distribution function taking a quantile q as input and
+#' computing the probability that the random variable belonging to the cdf stays
+#' below q
+#' @param ... further input variables for cdf
+#' @return quantile of the maximum of the random variables
+#' @export
+IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm, Msim = 5e5,...){
+  # Global probability of detecting at least one element
+  IV1 <- 1 - cdf_abs(scopes$q)^length(scopes$x)
+
+  # The scaled distance process
+  if(dim(scopes$C)[2] == 1){
+    C = cbind(scopes$C, scopes$C)
+  }else{
+    C = scopes$C
+  }
+  TC <- (scopes$hatmu - C) / (scopes$tN * scopes$hatsigma)
+
+  # Get the "p-values" for each location s
+  IVloc <- rep(NA, length(scopes$hatmu))
+  names(IVloc)  <- "C"
+  names(IVloc)[scopes$hatLC] <- "L"
+  names(IVloc)[scopes$hatUC] <- "U"
+
+  pL <- 1 - cdf(-TC[, 1], ...)
+  pU <- 1 - cdf( TC[, 2], ...)
+
+  IVloc <- vapply(1:length(scopes$x), function(x) min(pL[x], pU[x]), FUN.VALUE = 0.1)
+
+  # How extreme are the detections given the null
+  IVobs <- prod(ifelse(any(scopes$hatLC), IVloc[scopes$hatLC], 1)) *
+                  prod(ifelse(any(scopes$hatUC), IVloc[scopes$hatUC], 1))
+
+  rsample = matrix(rcdf(length(scopes$x) * Msim, ...), nrow = length(scopes$x))
+  IVk <- mean(apply(rsample, 2, function(col) sum(col > scopes$q) >= sum(scopes$hatUC) ) &
+                apply(rsample, 2, function(col) sum(col < -scopes$q) >= sum(scopes$hatLC) ))
+  IV1sim <- mean(apply(rsample, 2, function(col) sum(abs(col) > scopes$q) >= 1 ))
+  IVkabs <- mean(apply(rsample, 2, function(col) sum(abs(col) > scopes$q) >= sum(scopes$hatUC) + sum(scopes$hatLC) ))
+
+  # return the results
+  if(!is.null(scopes$kN)){
+    # Global probability of rejection of Gamma(mu) in Gamma(C)
+    # if hatmu1C is non-empty
+    IV0 = 1 - cdf_abs(scopes$kN)^length(scopes$x)
+
+    return(list(IV0 = IV0, IV1 = IV1, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs, IVloc = IVloc, IV1sim = IV1sim))
+  }else{
+    return(list(IV1 = IV1, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs, IVloc = IVloc, IV1sim = IV1sim))
+  }
+}
