@@ -4,7 +4,7 @@
 # Prepare workspace
 rm(list = ls())
 
-setwd("/home/fabian/Seafile/Code/Rpackages/SIRF/Code_Articles/SCoPES")
+setwd("~/Rpackages/SIRF/Code_Articles/SCoPES")
 
 library(SampleFields)
 library(tidyverse)
@@ -17,7 +17,7 @@ mu_name =  "2" # "1" #
 SCoPEStype = "classical" # "extraction"
 
 # General Simulation parameters
-Msim  = 1e1
+Msim  = 1e4
 alpha = 0.1
 C     = c(0,3)
 
