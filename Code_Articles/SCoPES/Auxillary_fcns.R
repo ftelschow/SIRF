@@ -38,16 +38,29 @@ generateData <- function(N, muvec, B, truesigma, SCoPEStype){
 }
 
 generate_muvec <- function(mu_name){
+      muu = c(-0.3, 0, 0.2, 3, 4)
       # Model parameters
       if(mu_name == "1"){
         NDelta = c(0, 80, 0, 0, 0)
-        muvec = generate_muvec(NDelta)
+        muvec = c(rep(muu[1], NDelta[1]),
+                  rep(muu[2], NDelta[2]),
+                  rep(muu[3], NDelta[3]),
+                  rep(muu[4], NDelta[4]),
+                  rep(muu[5], NDelta[5]))
       }else if(mu_name == "2"){
         NDelta = c(30, 20, 30, 0, 0)
-        muvec = generate_muvec(NDelta)
+        muvec = c(rep(muu[1], NDelta[1]),
+                  rep(muu[2], NDelta[2]),
+                  rep(muu[3], NDelta[3]),
+                  rep(muu[4], NDelta[4]),
+                  rep(muu[5], NDelta[5]))
       }else if(mu_name == "3"){
         NDelta = c(5, 75, 0, 0, 0)
-        muvec = generate_muvec(NDelta)
+        muvec = c(rep(muu[1], NDelta[1]),
+                  rep(muu[2], NDelta[2]),
+                  rep(muu[3], NDelta[3]),
+                  rep(muu[4], NDelta[4]),
+                  rep(muu[5], NDelta[5]))
       }else if(mu_name == "4"){
         muvec = sin( (1:100) / 2 / pi )
       }
