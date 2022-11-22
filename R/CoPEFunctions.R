@@ -191,6 +191,8 @@ SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN, method = "extraction", R = 
     if(is.null(method$mu1Cest)){
       hatmu1C =  PreimageC(C = C, hatmu = mu, hatsigma = rep(0, length(hatmu)),
                            tN = tN, kN = 0, method = method$SCoPEStype)
+    }else if(is.list(method$mu1Cest)){
+      hatmu1C = method$mu1Cest
     }else if(method$mu1Cest == "thickening"){
       hatmu1C =  PreimageC(C = C, hatmu = hatmu, hatsigma = hatsigma,
                            tN = tN, kN = method$kN, method = method$SCoPEStype)
@@ -282,7 +284,7 @@ SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN, method = "extraction", R = 
     contain  <- Lcontain && Ucontain
 
     t_detect <- sum(t(DetectL), na.rm = T) + sum(t(DetectU), na.rm = T)
-    f_detect <- sum(t(DetectL)==0, na.rm = T) + sum(t(DetectU)==0, na.rm = T)
+    f_detect <- sum(t(DetectL) == 0, na.rm = T) + sum(t(DetectU) == 0, na.rm = T)
 
     return(list(hatLC = hatLC, hatUC = hatUC, q = q, hatmu1C = hatmu1C, kN = method$kN,
                 contain = contain, Lcontain = Lcontain, Ucontain = Ucontain,
@@ -340,7 +342,7 @@ plot_SCoPES <- function(scopes, index_C = 1,
   # Get a color vector indicating the "red" (upper excursions) and
   # the blue (lower excursions) set
   colVec <- rep("black", length(scopes$hatmu))
-  colVec[scopes$hatLC[, index_C]]         <- "blue"
+  colVec[scopes$hatLC[, index_C]] <- "blue"
   colVec[scopes$hatUC[, index_C]] <- "red"
   plot(scopes$x, y, col = colVec,
        pch = 18, xlab = xlab, ylab = ylab, main = title)
@@ -348,8 +350,10 @@ plot_SCoPES <- function(scopes, index_C = 1,
     lines(scopes$x, C[,1], lty = 2, col = "blue")
     lines(scopes$x, C[,2], lty = 2, col = "red")
   }else{
-    lines(scopes$x, C[,1], lty = 2, col = "orchid3")
+    lines(scopes$x, C[,1], lty = 1, col = "orchid3")
   }
+  lines(scopes$x, scopes$q * scopes$hatsigma * scopes$tN, lty = 2, col = "orchid3")
+  lines(scopes$x, -scopes$q * scopes$hatsigma * scopes$tN, lty = 2, col = "orchid3")
 }
 #' This functions computes the SCoPES corresponding to an estimator and a set
 #' of functions given as a matrix with columns being the cut-off functions.
@@ -395,7 +399,7 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
   Lcontain <- Ucontain <- matrix(FALSE, length(model$x), Msim)
   detectL  <- array(FALSE, dim = c(dC[1], length(Iminus), Msim))
   detectU  <- array(FALSE, dim = c(dC[1], length(Iplus), Msim))
-  NDetect_holm <- NDetect_sidak <- NDetect  <-  matrix(NaN, 2, Msim)
+  NDetect_BH <- NDetect_holm <- NDetect_sidak <- NDetect  <-  matrix(NaN, 2, Msim)
 
   for(m in 1:Msim){
     # Get the sample for the simulation run
@@ -443,27 +447,32 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
       pvals <- apply(Y, 1, function(v) t.test(x = v,
                                               alternative = "two.sided",
                                               conf.level = 1-alpha)$p.value)
+
       # pvals_adjust = p.adjust(pvals, method = "sidak")
       detect_holm  = FWE_control(alpha, pvals, "holm")
       detect_sidak = FWE_control(alpha, pvals, "sidak")
+      detect_BH    = FDR_control(alpha, pvals, "BH")
 
       NDetect_holm[1, m]  <- sum(detect_holm[I1])
       NDetect_holm[2, m]  <- sum(detect_holm[I0])
       NDetect_sidak[1, m] <- sum(detect_sidak[I1])
       NDetect_sidak[2, m] <- sum(detect_sidak[I0])
+      NDetect_BH[1, m] <- sum(detect_BH[I1])
+      NDetect_BH[2, m] <- sum(detect_BH[I0])
       }
   }
 
     if(SCoPEStype == "classical"){
-      return(list(coverage = contain, Lcoverage = Lcontain,
+      return(list(coverage  = contain, Lcoverage = Lcontain,
                   Ucoverage = Ucontain, q = hatq, mu1C = hatmu1C,
                   detectL   = detectL, detectU = detectU,
-                  NDetect = NDetect, NDetect_holm = NDetect_holm,
-                  NDetect_sidak = NDetect_sidak))
+                  NDetect       = NDetect,
+                  NDetect_holm  = NDetect_holm,
+                  NDetect_sidak = NDetect_sidak,
+                  NDetect_BH    = NDetect_BH))
     }else{
       return(list(coverage = contain, Lcoverage = Lcontain,
                   Ucoverage   = Ucontain, q = hatq, mu1C = hatmu1C,
                   detectL     = detectL, detectU = detectU, NDetect = NDetect))
     }
-
 }

@@ -63,10 +63,13 @@ FDR_control <- function(alpha, pvals, correction){
     }
     # "correct" the pvalue
     pvals_sort <- vapply( 1:M, function(k) (M/k) * C[k] * pvals.sort[k], FUN.VALUE = 0.1 )
-    # BH rule
-    k_max      <- max(which(pvals_sort < alpha))
+
     # Reject all sorted k smaller than k_max
-    reject[Isort[1:k_max]] = TRUE
+    if(any(pvals_sort < alpha)){
+      # BH rule
+      k_max      <- max(which(pvals_sort < alpha))
+      reject[Isort[1:k_max]] = TRUE
+    }
   }else{
     stop("Method not implmenented. Choose 'bonferroni' for Bonferroni
          correction or 'BH' for Bonferroni-Holm Correction.")

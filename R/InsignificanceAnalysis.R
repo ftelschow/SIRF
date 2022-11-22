@@ -74,7 +74,7 @@ IVobs <- function(scopes, method){
 #' @param ... further input variables for cdf
 #' @return quantile of the maximum of the random variables
 #' @export
-IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm, Msim = 5e5,...){
+IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm, Msim = 5e5, KK = 5,...){
   # Global probability of detecting at least one element
   IV1 <- 1 - cdf_abs(scopes$q)^length(scopes$x)
 
@@ -86,6 +86,9 @@ IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm
   }
   TC <- (scopes$hatmu - C) / (scopes$tN * scopes$hatsigma)
 
+  Tnull <- abs(scopes$hatmu / (scopes$tN * scopes$hatsigma))
+  Tnull = sort(Tnull[scopes$hatUC | scopes$hatLC])
+  Tnull = Tnull[1:KK]
   # Get the "p-values" for each location s
   IVloc <- rep(NA, length(scopes$hatmu))
   names(IVloc)  <- "C"
@@ -104,17 +107,22 @@ IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm
   rsample = matrix(rcdf(length(scopes$x) * Msim, ...), nrow = length(scopes$x))
   IVk <- mean(apply(rsample, 2, function(col) sum(col > scopes$q) >= sum(scopes$hatUC) ) &
                 apply(rsample, 2, function(col) sum(col < -scopes$q) >= sum(scopes$hatLC) ))
-  IV1sim <- mean(apply(rsample, 2, function(col) sum(abs(col) > scopes$q) >= 1 ))
   IVkabs <- mean(apply(rsample, 2, function(col) sum(abs(col) > scopes$q) >= sum(scopes$hatUC) + sum(scopes$hatLC) ))
-
+  IV0kN <- mean(apply(rsample, 2, function(col) sum(abs(col) > scopes$kN) >= sum(scopes$hatUC) + sum(scopes$hatLC)  ))
+  IV  <- vapply(1:10, function(k) mean(apply(rsample, 2, function(col) sum(abs(col) > scopes$q) >= k )), FUN.VALUE = 0.1)
+  IVo <- t(vapply( Tnull, function(t)
+        vapply(1:10, function(k) mean(apply(rsample, 2, function(col) sum(abs(col) > t) >= k )), FUN.VALUE = 0.1),
+        FUN.VALUE = rep(0.1, 10)))
+  colnames(IVo) <- 1:10
   # return the results
   if(!is.null(scopes$kN)){
     # Global probability of rejection of Gamma(mu) in Gamma(C)
     # if hatmu1C is non-empty
     IV0 = 1 - cdf_abs(scopes$kN)^length(scopes$x)
 
-    return(list(IV0 = IV0, IV1 = IV1, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs, IVloc = IVloc, IV1sim = IV1sim))
+    return(list(IV0 = IV0, IV0kN = IV0kN, IV = IV,  IVo = IVo,IVk = IVk, IVkabs = IVkabs, IVobs = IVobs,
+                IVloc = IVloc))
   }else{
-    return(list(IV1 = IV1, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs, IVloc = IVloc, IV1sim = IV1sim))
+    return(list(IV = IV, IVo = IVo, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs, IVloc = IVloc))
   }
 }
