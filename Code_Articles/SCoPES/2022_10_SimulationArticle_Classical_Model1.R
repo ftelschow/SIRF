@@ -4,7 +4,7 @@
 # Prepare workspace
 rm(list = ls())
 
-setwd("/home/fabian/Seafile/Code/Rpackages/SIRF/Code_Articles/SCoPES")
+setwd("~/Rpackages/SIRF/Code_Articles/SCoPES")
 
 library(SampleFields)
 library(tidyverse)

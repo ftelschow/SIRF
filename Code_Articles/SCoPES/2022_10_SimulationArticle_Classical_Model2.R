@@ -4,7 +4,7 @@
 # Prepare workspace
 rm(list = ls())
 
-setwd("/home/fabian/Seafile/Code/Rpackages/SIRF/Code_Articles/SCoPES")
+setwd("~/Rpackages/SIRF/Code_Articles/SCoPES")
 
 library(SampleFields)
 library(tidyverse)
@@ -13,7 +13,7 @@ library(SIRF)
 source("Auxillary_fcns.R")
 today = "2022_22_9_"
 #-------------------------------------------------------------------------------
-mu_name = "2" # "2" #
+mu_name = "2"
 SCoPEStype = "classical" # "extraction"
 
 # General Simulation parameters
