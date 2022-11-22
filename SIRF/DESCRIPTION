@@ -1,0 +1,23 @@
+Package: SIRF
+Type: Package
+Title: Simultaneous Inference for Random Fields
+Version: 0.1.0
+Author: Fabian J.E. Telschow
+Maintainer: Fabian J.E. Telschow <ftelschow@ucsd.edu>
+Description: This package implements methods for Simultaneous Inference
+    for Random Fields (SIRF).
+    Currently, the main functionality is computation of simultaneous confidence
+    bands for the population mean or moment based statistics of differentiable
+    random field data over a rectangular domain in 1D or 2D.
+    Options to estimate the quantile are a non-parametric bootstrap,
+    a multiplier bootstrap or the GKF. The latter is the main novelty since
+    it allows for fast computation of the quantiles even for higher dimensional
+    domains.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports: abind,
+Suggests: locpol,
+    MASS,
+    spatstat
+RoxygenNote: 7.1.2
