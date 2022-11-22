@@ -13,7 +13,7 @@ library(SIRF)
 source("Auxillary_fcns.R")
 today = "2022_22_9_"
 #-------------------------------------------------------------------------------
-mu_name = "1" # "2" #
+mu_name = "1"
 SCoPEStype = "classical" # "extraction"
 
 # General Simulation parameters
