@@ -24,7 +24,7 @@
   mu1est     =  "thickening" # NULL #
   kNtype = "log" # "SCB" #
   betaN  = 0.95
-  k_fac  = 5
+  k_fac  = 2
 
   # General Simulation parameters
   alpha = 0.1
@@ -120,7 +120,7 @@
 #  IVs = round(c(IV$IV0, IV$IV0kN, IV$IV1,  IV$IV2,  IV$IV3,  IV$IV4, IV$IVkabs, IV$IVk, IV$IVobs), 4)
 #  names(IVs) = c("IV0", "IVkn", "IV1", "IV2", "IV3", "IV4", "IVkabs", "IVk", "IVobs")
   IVs = round(rbind(IV$IV, IV$IVo), 4)
-  rownames(IVs) = c("IVq", "IVobs")
+  rownames(IVs) = c("IVq", rep("IVobs",dim(IV$IVo)[1]))
   colnames(IVs) = 1:length(IV$IV)
 
   test
