@@ -22,7 +22,7 @@ alpha = 0.1
 C     = c(0,3)
 
 NVec    = c(20, 50, 1e2, 2e2, 5e2, 10e2)
-betaVec = c(alpha, 1-0.01, 2, 3, 5, 10, 666)
+betaVec = c(666, 10, 5, 3, 2, 1-0.01, alpha )
 
 # variables: q estimation
 name       = "t" # "gauss" # "mboot" #
