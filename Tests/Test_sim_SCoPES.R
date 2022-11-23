@@ -13,54 +13,42 @@ source("Tests/Auxillary_fcns.R")
 # Variables General
 Msim  = 1e3
 # Variables: General
-N     = 5e1
+N     = 1e3
+Ntrue = 80
 alpha = 0.1
 
-kNtype  = "SCB"
-betaN = 0.1
-k_fac = 2
+mu_name    =   "1" #"2" # "3" #
+SCoPEStype = "classical" # "extraction"
+mu1est     =  "thickening" # NULL #
+kNtype =  "log" # "SCB" #
+betaN  = 0.99
+k_fac  = 3
 
-# Variables: mean function
-mu_name = "1" # "3" #  "2" #
-p_mu2   = 0.05
-nx_true_low = 50
-nx_true_up  = 5
-nx_close    = 25
-nx_close2   = 35
-nx_far      = 5
+B     = c(0, 3)
+
+NVec    = c(20, 50, 1e2, 2e2, 5e2, 10e2)
+betaVec = c(0.99, 0.2, 0.5, 0.15, 0.1, 0.05)
+
+# Model parameters
+if(mu_name == "1"){
+  NDelta = c(30, 20, 30, 0, 0)
+  muvec = generate_muvec(NDelta)
+}else if(mu_name == "2"){
+  NDelta = c(0, Ntrue, 0, 0, 0)
+  muvec = generate_muvec(NDelta)
+}else{
+  muvec = sin((1:100)/2/pi)
+}
+
+
 # variables: q estimation
 name       = "t" # "gauss" # "mboot" #
-SCoPEStype = "classical" # "extraction" #     "selection" #
-mu1est     = "thickening" # NULL #
 truesigma  = FALSE
 
-
-
-# Variables for the tubes
-Delta = 0.3
-
-if(mu_name == "1"){
-  B = c(0, 3)
-  muu   = c(0, -0.3, 0.2, 3.5, 3)
-  muvec = c(rep(muu[1], nx_true_low), rep(muu[2], nx_close2), rep(muu[3], nx_close), rep(muu[4], nx_far), rep(muu[5], nx_true_up))
-  muvec = muvec[sample(1:length(muvec), replace = FALSE)]
-}else if(mu_name == "2"){
-  B = c(0, 3)
-  muvec = c(p_mu2, rep(0, 20))
-}else{
-  muu   = c(0, B[1]-0.1, B[1]+0.1, B[2]-0.1, B[2]+0.1)
-  muvec = c(rep(muu[1], 3000), rep(muu[2], 200), rep(muu[3], 200), rep(muu[4], 200), rep(muu[5], 200))
-  B = c(-Delta, Delta)
-}
 kNold = log(N) / k_fac
 
-mm = list(minus = rep(T, length(muvec)), plus = rep(T, length(muvec)))
-qest <- function(q) maxT_p(q, mm, df = N-1) - 1 + betaN
-SCBquant = uniroot(qest, interval = c(-50, 50))
-
-c(kNold, SCBquant$root)
 if(kNtype == "SCB"){
-  kN = SCBquant$root
+  kN = get_SCBquant(betaN, N, muvec)
 }else{
   kN = kNold
 }
@@ -73,6 +61,9 @@ C = y$C; tN = y$tN
 #-------------------------------------------------------------------------------
 # Generate method list
 method = method_gen(name, SCoPEStype, mu1est, N, kN, R )
+
+tmp = PreimageC(cbind(C,C), hatmu, hatsigma, tN, kN = kN, method = "classical")
+all(tmp$minus)
 
 #-------------------------------------------------------------------------------
 # Main test area
@@ -104,14 +95,25 @@ if(SCoPEStype == "extraction"){
        main = paste("True = ", sum(index_minus), sep = "") )
 }
 
-par(mfrow = c(1,1))
+# Check the testing
+mtrue_detect = c(mean(test$NDetect[1,]),
+                mean(test$NDetect_holm[1,]),
+                mean(test$NDetect_sidak[1,]))
+mfalse_detect = c(mean(test$NDetect[2,]),
+                 mean(test$NDetect_holm[2,]),
+                 mean(test$NDetect_sidak[2,]))
+false_inclusion = c(mean(test$NDetect[2,]>0),
+                  mean(test$NDetect_holm[2,]>0),
+                  mean(test$NDetect_sidak[2,]>0))
+
+summ <- rbind(mtrue_detect, mfalse_detect, false_inclusion)
+colnames(summ) <- c("SCoPES", "holm", "sidak")
+rownames(summ) <- c("av. true detect", "av. false detect", "SCoPES incl false")
 
 results <- c(test$coverage)
 names(results) <- c("Coverage")
 results
-
 c(kNold, kN)
+summ
 
-rowMeans(test$NDetect)
-rowMeans(test$NDetect_holm)
-rowMeans(test$NDetect_sidak)
+#apply(test$mu1C$minus | test$mu1C$plus, 2, sum)

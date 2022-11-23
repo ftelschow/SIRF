@@ -16,35 +16,49 @@
   #-------------------------------------------------------------------------------
   # Variables: General
   N     = 1e2
-  alpha = 0.1
-  betaN = 0.99
-  k_fac = 2
-
+  Ntrue = 80
   mcorrect = "sidak" # "holm" #
 
-  # Variables: mean function
-  mu_name = "1" # "3" #  "2" #
-  p_mu2   = 0.05
-  nx_true_low = 20
-  nx_true_up  = 0
-  nx_close    = 30
-  nx_close2   = 30
-  nx_far      = 0
+  mu_name    = "1" #  "3" # "2" # "4" #
+  SCoPEStype = "classical" # "extraction"
+  mu1est     =  "thickening" # NULL #
+  kNtype = "log" # "SCB" #
+  betaN  = 0.95
+  k_fac  = 5
+
+  # General Simulation parameters
+  alpha = 0.1
+  B     = c(0, 3)
+
+  NVec    = c(20, 50, 1e2, 2e2, 5e2, 10e2)
+  betaVec = c(0.99, 0.2, 0.5, 0.15, 0.1, 0.05)
+
+  # Model parameters
+  if(mu_name == "1"){
+    NDelta = c(30, 20, 30, 0, 0)
+    muvec = generate_muvec(NDelta)
+  }else if(mu_name == "2"){
+    NDelta = c(0, Ntrue, 0, 0, 0)
+    muvec = generate_muvec(NDelta)
+  }else if(mu_name == "3"){
+    muvec = sin((1:100)/2/pi)
+  }else if(mu_name == "4"){
+    NDelta = c(5, 75, 0, 0, 0)
+    muvec = generate_muvec(NDelta)
+  }
+
   # variables: q estimation
-  name       = "t" #"gauss" # "mboot" #
-  SCoPEStype = "classical" # "selection" # "extraction" #
-  mu1est     = "thickening" # NULL #
+  name       = "t" # "gauss" # "mboot" #
   truesigma  = FALSE
 
-  kN = log(N) / k_fac
+  kNold = log(N) / k_fac
 
+  if(kNtype == "SCB"){
+    kN = get_SCBquant(betaN, N, muvec)
+  }else{
+    kN = kNold
+  }
 
-  mm = list(minus = rep(T, length(muvec)),#-nx_close2),
-            plus = rep(T, length(muvec)))#-nx_close2))
-  qest <- function(q) maxT_p(q, mm, df = N-1) - (1 - betaN)
-
-  SCBquant = uniroot(qest, interval = c(-100, 100))
-  kN = SCBquant$root
   #-------------------------------------------------------------------------------
   # Generate data
   y = generateData(N, muvec, B, truesigma, SCoPEStype)
@@ -82,23 +96,44 @@
                               conf.level = 1-alpha)$p.value)
    # pvals_adjust = p.adjust(pvals, method = "sidak")
     detect_holm  = FWE_control(alpha, pvals, mcorrect)
+    # Benyamini-Hochberg-correction
+    detect_BH <- FDR_control(alpha, pvals, "BH")
 
     t_detect_h <- sum(detect_holm[I1])
     f_detect_h <- sum(detect_holm[I0])
 
-    test = round(cbind(c(t_detect_h, f_detect_h), c(scopes$NtrueDetect, scopes$NfalseDetect)), 3)
-    colnames(test) <- c(mcorrect, "SCoPES")
+    t_detect_bh <- sum(detect_BH[I1])
+    f_detect_bh <- sum(detect_BH[I0])
+
+    test = round(cbind(c(t_detect_bh, f_detect_bh),c(t_detect_h, f_detect_h), c(scopes$NtrueDetect, scopes$NfalseDetect), c(kN, kN)), 3)
+    colnames(test) <- c("BH",mcorrect, "SCoPES", "kN")
     rownames(test) <- c("true", "false")
 
-    # IVloc = rbind(IVloc, pvals, pvals_adjust)
-    # colnames(IVloc) <- x
-    # rownames(IVloc) <- c("IVloc", "pvals", "pvals.adj")
   }else{
-    test = round(c(scopes$NtrueDetect, scopes$NfalseDetect), 3)
-    names(test) <- c("true", "false")
+    test = round(cbind(c(scopes$NtrueDetect, scopes$NfalseDetect), c(kN, kN)), 3)
+    names(test) <- c("true", "false", "kN")
   }
 
+  IV <- IVs_IID(scopes, cdf = pt, cdf_abs = function(q) extraDistr::pht(q = q, nu = N-1),
+                rcdf = rt, Msim = 2e4, df = N - 1)
+
+#  IVs = round(c(IV$IV0, IV$IV0kN, IV$IV1,  IV$IV2,  IV$IV3,  IV$IV4, IV$IVkabs, IV$IVk, IV$IVobs), 4)
+#  names(IVs) = c("IV0", "IVkn", "IV1", "IV2", "IV3", "IV4", "IVkabs", "IVk", "IVobs")
+  IVs = round(rbind(IV$IV, IV$IVo), 4)
+  rownames(IVs) = c("IVq", "IVobs")
+  colnames(IVs) = 1:length(IV$IV)
+
   test
-  # IV
   #IVloc
-kN
+c(all(!detect_holm == scopes$hatmu1C$minus), sum(!detect_holm), sum(scopes$hatmu1C$minus))
+
+# Get the SCoPES for the method
+method2 = method
+method2$mu1Cest = list(minus = !detect_BH, plus = !detect_BH)
+
+#scopes2 <- SCoPES(alpha = alpha, C = C, x = x, hatmu = hatmu,
+#                 hatsigma = hatsigma, tN = 1 / sqrt(N),
+#                 method = method2,  R = R, mu = model$mu(model$x))
+#test[1,4] = scopes2$NtrueDetect
+test
+IVs

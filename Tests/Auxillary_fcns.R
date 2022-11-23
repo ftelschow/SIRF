@@ -40,7 +40,6 @@ generateData <- function(N, muvec, B, truesigma, SCoPEStype){
 generate_muvec <- function(NDelta, mu_name = "1"){
     # Variables for the tubes
     if(mu_name == "1"){
-      B = c(0, 3)
       muu   = c(-0.3, 0, 0.2, 3, 4)
       muvec = c(rep(muu[1], NDelta[1]),
                 rep(muu[2], NDelta[2]),
@@ -49,7 +48,6 @@ generate_muvec <- function(NDelta, mu_name = "1"){
                 rep(muu[5], NDelta[5]))
       muvec = muvec[sample(1:length(muvec), replace = FALSE)]
     }else if(mu_name == "2"){
-      B = c(0, 3)
       muvec = c(rep(NDelta[1], NDelta[2]), rep(0,  NDelta[3]))
     }
     return(muvec)
@@ -58,7 +56,6 @@ generate_muvec <- function(NDelta, mu_name = "1"){
 get_SCBquant <- function(betaN, N, muvec){
   mm = list(minus = rep(T, length(muvec)),#-nx_close2),
             plus = rep(T, length(muvec)))#-nx_close2))
-  qest <- function(q) maxT_p(q, mm, df = N-1) - (1 - betaN)
 
-  return(uniroot(qest, interval = c(-100, 100))$root)
+  return(maxT_quantile(1 - betaN, muC = mm, df = N-1))
 }
