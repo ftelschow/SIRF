@@ -17,14 +17,14 @@
   # Variables: General
   N     = 1e2
   Ntrue = 80
-  mcorrect = "sidak" # "holm" #
+  mcorrect = "hommel" # "bonferroni" # "holm" #  "sidak" #
 
-  mu_name    = "1" #  "3" # "2" # "4" #
+  mu_name    = "1" # "2" #   "3" # "4" #
   SCoPEStype = "classical" # "extraction"
-  mu1est     =  "thickening" # NULL #
-  kNtype = "log" # "SCB" #
-  betaN  = 0.95
-  k_fac  = 2
+  mu1est     = "m0" #  "thickening" #  NULL #
+  kNtype =  "SCB" # "log" #
+  betaN  = 1-0.1
+  k_fac  = 10
 
   # General Simulation parameters
   alpha = 0.1
@@ -55,18 +55,29 @@
 
   if(kNtype == "SCB"){
     kN = get_SCBquant(betaN, N, muvec)
+  }else if(kNtype == "m0"){
+    kN = 666
   }else{
     kN = kNold
   }
+
 
   #-------------------------------------------------------------------------------
   # Generate data
   y = generateData(N, muvec, B, truesigma, SCoPEStype)
   x = y$x; hatmu = y$hatmu; hatsigma = y$hatsigma; R = y$R; model = y$model;
   C = y$C; tN = y$tN
+
+  # Get pvalues
+  # Bonferroni-Holm-correction
+  pvals <- apply(y$Y, 1, function(v) t.test(x = v,
+                                            alternative = "two.sided",
+                                            conf.level = 1-alpha)$p.value)
+  m0hat = 2*sum(pvals >= 0.5)
+
   #-------------------------------------------------------------------------------
   # Generate method list
-  method = method_gen(name, SCoPEStype, mu1est, N, kN, R )
+  method = method_gen(name, SCoPEStype, mu1est, N, kN, m0 = m0hat, R = R )
 
   #-------------------------------------------------------------------------------
   # Main test area
@@ -90,14 +101,10 @@
   # IVloc = round(IVs$IVloc, 3)
 
   if(SCoPEStype == "classical"){
-    # Bonferroni-Holm-correction
-    pvals <- apply(y$Y, 1, function(v) t.test(x = v,
-                              alternative = "two.sided",
-                              conf.level = 1-alpha)$p.value)
    # pvals_adjust = p.adjust(pvals, method = "sidak")
-    detect_holm  = FWE_control(alpha, pvals, mcorrect)
+    detect_holm  = MPT_Detect(alpha, pvals, mcorrect)
     # Benyamini-Hochberg-correction
-    detect_BH <- FDR_control(alpha, pvals, "BH")
+    detect_BH <- MPT_Detect(alpha, pvals, "BH")
 
     t_detect_h <- sum(detect_holm[I1])
     f_detect_h <- sum(detect_holm[I0])
@@ -105,8 +112,11 @@
     t_detect_bh <- sum(detect_BH[I1])
     f_detect_bh <- sum(detect_BH[I0])
 
-    test = round(cbind(c(t_detect_bh, f_detect_bh),c(t_detect_h, f_detect_h), c(scopes$NtrueDetect, scopes$NfalseDetect), c(kN, kN)), 3)
-    colnames(test) <- c("BH",mcorrect, "SCoPES", "kN")
+    test = round(cbind(c(t_detect_bh, f_detect_bh),
+                       c(t_detect_h, f_detect_h),
+                       c(scopes$NtrueDetect, scopes$NfalseDetect),
+                       c(scopes$q, f_detect_bh / (t_detect_bh + f_detect_bh))), 3)
+    colnames(test) <- c("BH",mcorrect, "SCoPES", "q")
     rownames(test) <- c("true", "false")
 
   }else{
@@ -119,8 +129,8 @@
 
 #  IVs = round(c(IV$IV0, IV$IV0kN, IV$IV1,  IV$IV2,  IV$IV3,  IV$IV4, IV$IVkabs, IV$IVk, IV$IVobs), 4)
 #  names(IVs) = c("IV0", "IVkn", "IV1", "IV2", "IV3", "IV4", "IVkabs", "IVk", "IVobs")
-  IVs = round(rbind(IV$IV, IV$IVo), 4)
-  rownames(IVs) = c("IVq", rep("IVobs",dim(IV$IVo)[1]))
+  IVs = round(rbind(IV$IV, IV$IVo, IV$IVo2), 4)
+  rownames(IVs) = c("IVq", rep("IVobs",dim(IV$IVo)[1]), rep("IVobs2",dim(IV$IVo2)[1]))
   colnames(IVs) = 1:length(IV$IV)
 
   test
@@ -136,4 +146,6 @@ method2$mu1Cest = list(minus = !detect_BH, plus = !detect_BH)
 #                 method = method2,  R = R, mu = model$mu(model$x))
 #test[1,4] = scopes2$NtrueDetect
 test
-IVs
+#IVs
+IV$hatm0
+

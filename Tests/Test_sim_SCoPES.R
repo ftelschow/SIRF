@@ -13,13 +13,13 @@ source("Tests/Auxillary_fcns.R")
 # Variables General
 Msim  = 1e3
 # Variables: General
-N     = 1e3
+N     = 2e2
 Ntrue = 80
 alpha = 0.1
 
 mu_name    =   "1" #"2" # "3" #
 SCoPEStype = "classical" # "extraction"
-mu1est     =  "thickening" # NULL #
+mu1est     = "m0" #  "thickening" # NULL #
 kNtype =  "log" # "SCB" #
 betaN  = 0.99
 k_fac  = 3
@@ -97,17 +97,17 @@ if(SCoPEStype == "extraction"){
 
 # Check the testing
 mtrue_detect = c(mean(test$NDetect[1,]),
-                mean(test$NDetect_holm[1,]),
+                mean(test$NDetect_hommel[1,]),
                 mean(test$NDetect_sidak[1,]))
 mfalse_detect = c(mean(test$NDetect[2,]),
-                 mean(test$NDetect_holm[2,]),
+                 mean(test$NDetect_hommel[2,]),
                  mean(test$NDetect_sidak[2,]))
 false_inclusion = c(mean(test$NDetect[2,]>0),
-                  mean(test$NDetect_holm[2,]>0),
+                  mean(test$NDetect_hommel[2,]>0),
                   mean(test$NDetect_sidak[2,]>0))
 
 summ <- rbind(mtrue_detect, mfalse_detect, false_inclusion)
-colnames(summ) <- c("SCoPES", "holm", "sidak")
+colnames(summ) <- c("SCoPES", "hommel", "sidak")
 rownames(summ) <- c("av. true detect", "av. false detect", "SCoPES incl false")
 
 results <- c(test$coverage)
