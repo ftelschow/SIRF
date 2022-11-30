@@ -361,7 +361,7 @@ scaleField <- function(Y,
 #' @param Weights Matrix containing a smoothing matrix. If specified all other parameters for smoothing are ignored.
 #' @return Scale field
 #' @export
-method_gen <- function(name, SCoPEStype, mu1est, N, kN, ...){
+method_gen <- function(name, SCoPEStype, mu1est, N, kN, m0 = NULL, R = NULL){
   arguments = ls()
   q_method <- list(
     name = name,
@@ -371,7 +371,8 @@ method_gen <- function(name, SCoPEStype, mu1est, N, kN, ...){
   )
   # q estimation specification
   if(name == "t"){
-    q_method$df = N-1
+    q_method$df = N - 1
+    q_method$kN = kN
   }else if(name == "mboot"){
     if(!("Boottype" %in% arguments)){
       Boottype = "t"
@@ -386,6 +387,10 @@ method_gen <- function(name, SCoPEStype, mu1est, N, kN, ...){
     q_method$weights    = weights
     q_method$Mboots     = Mboots
     q_method$R          = R
+    q_method$kN = kN
+  }
+  if(mu1est == "m0"){
+    q_method$m0 = m0
   }
   return(q_method)
 }
