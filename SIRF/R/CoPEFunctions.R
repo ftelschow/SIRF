@@ -196,6 +196,8 @@ SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN, method = "extraction", R = 
     }else if(method$mu1Cest == "thickening"){
       hatmu1C =  PreimageC(C = C, hatmu = hatmu, hatsigma = hatsigma,
                            tN = tN, kN = method$kN, method = method$SCoPEStype)
+    }else if(method$mu1Cest == "m0"){
+      hatmu1C = method$m0
     }
   }else{
     hatmu1C = list(minus = rep(TRUE, length(hatmu)), plus = rep(TRUE, length(hatmu)))
@@ -399,7 +401,7 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
   Lcontain <- Ucontain <- matrix(FALSE, length(model$x), Msim)
   detectL  <- array(FALSE, dim = c(dC[1], length(Iminus), Msim))
   detectU  <- array(FALSE, dim = c(dC[1], length(Iplus), Msim))
-  NDetect_BH <- NDetect_holm <- NDetect_sidak <- NDetect  <-  matrix(NaN, 2, Msim)
+  NDetect_BH <- NDetect_hommel <- NDetect_sidak <- NDetect  <-  matrix(NaN, 2, Msim)
 
   for(m in 1:Msim){
     # Get the sample for the simulation run
@@ -421,6 +423,14 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
       hatsigma = apply(Y, 1, sd)
     }
 
+    if(q_method$mu1Cest == "m0"){
+      pvals <- apply(Y, 1, function(v) t.test(x = v,
+                                                alternative = "two.sided",
+                                                conf.level = 1-alpha)$p.value)
+      q_method$m0 = 2*sum(pvals >= 0.5)
+
+    }
+
     # Get the SCoPES for the method
     res_m <- SCoPES(alpha = alpha, C = C, x = model$x, hatmu = hatmu,
                     hatsigma = hatsigma, tN = 1 / sqrt(N),
@@ -429,8 +439,12 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
 
     # Save the useful variables from the simulation
     hatq[m]    <- res_m$q
-    hatmu1C$minus[, m] <- res_m$hatmu1C$minus
-    hatmu1C$plus[, m]  <- res_m$hatmu1C$plus
+    hatmu1C$minus[, m] <- ifelse(q_method$mu1Cest != "m0",
+                                 res_m$hatmu1C$minus,
+                                 rep(T, length(model$x)))
+    hatmu1C$plus[, m]  <- ifelse(q_method$mu1Cest != "m0",
+                                 res_m$hatmu1C$plus,
+                                 rep(T, length(model$x)))
     detectL[,, m]      <- res_m$hatLC
     detectU[,, m]      <- res_m$hatUC
     Lcontain[, m]      <- res_m$Lcontain_loc
@@ -449,12 +463,12 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
                                               conf.level = 1-alpha)$p.value)
 
       # pvals_adjust = p.adjust(pvals, method = "sidak")
-      detect_holm  = FWE_control(alpha, pvals, "holm")
+      detect_hommel  = MPT_Detect(alpha, pvals, "hommel")
       detect_sidak = FWE_control(alpha, pvals, "sidak")
       detect_BH    = FDR_control(alpha, pvals, "BH")
 
-      NDetect_holm[1, m]  <- sum(detect_holm[I1])
-      NDetect_holm[2, m]  <- sum(detect_holm[I0])
+      NDetect_hommel[1, m]  <- sum(detect_hommel[I1])
+      NDetect_hommel[2, m]  <- sum(detect_hommel[I0])
       NDetect_sidak[1, m] <- sum(detect_sidak[I1])
       NDetect_sidak[2, m] <- sum(detect_sidak[I0])
       NDetect_BH[1, m] <- sum(detect_BH[I1])
@@ -467,7 +481,7 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
                   Ucoverage = Ucontain, q = hatq, mu1C = hatmu1C,
                   detectL   = detectL, detectU = detectU,
                   NDetect       = NDetect,
-                  NDetect_holm  = NDetect_holm,
+                  NDetect_hommel  = NDetect_hommel,
                   NDetect_sidak = NDetect_sidak,
                   NDetect_BH    = NDetect_BH))
     }else{
