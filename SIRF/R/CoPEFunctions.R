@@ -427,7 +427,7 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
       pvals <- apply(Y, 1, function(v) t.test(x = v,
                                                 alternative = "two.sided",
                                                 conf.level = 1-alpha)$p.value)
-      q_method$m0 = 2*sum(pvals >= 0.5)
+      q_method$m0 = min(2*sum(pvals >= 0.5), length(pvals))
 
     }
 
