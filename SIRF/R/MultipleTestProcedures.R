@@ -19,6 +19,18 @@
 #' @param correction string currently "bonferroni" or "holm" are options
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
+MPT_Detect <- function(alpha, pvals, correction){
+  return(p.adjust(pvals, method = correction) <= alpha )
+}
+
+#' This functions computes the true standard error depending on N for different
+#' functionals of Gaussians
+#'
+#' @param alpha numeric in (0,1) the overall significance level to be achieved
+#' @param pvals a vector of pvalues
+#' @param correction string currently "bonferroni" or "holm" are options
+#' @return Standard error under the assumption the data is Gaussian
+#' @export
 FWE_control <- function(alpha, pvals, correction){
   M = length(pvals)
   reject <- rep(FALSE, M)
