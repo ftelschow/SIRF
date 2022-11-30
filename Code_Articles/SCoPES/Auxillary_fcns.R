@@ -69,9 +69,7 @@ generate_muvec <- function(mu_name){
 }
 
 get_SCBquant <- function(betaN, N, muvec){
-  mm = list(minus = rep(T, length(muvec)),#-nx_close2),
-            plus = rep(T, length(muvec)))#-nx_close2))
-  qest <- function(q) maxT_p(q, mm, df = N-1) - (1 - betaN)
+  qest <- function(q) maxT_p(q, length(muvec), df = N-1) -  betaN
 
   return(uniroot(qest, interval = c(-100, 100))$root)
 }
