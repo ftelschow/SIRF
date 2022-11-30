@@ -87,7 +87,7 @@ IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm
   TC <- (scopes$hatmu - C) / (scopes$tN * scopes$hatsigma)
 
   pvals = 1 - cdf_abs(abs(TC[,1]))
-  hatm0 = 2*sum(pvals >= 0.5)
+  hatm0 = min(2*sum(pvals >= 0.5), length(pvals))
 
   detectN = sum(scopes$hatUC | scopes$hatLC)
   Tnull <- abs(scopes$hatmu / (scopes$tN * scopes$hatsigma))
