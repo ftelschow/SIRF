@@ -31,8 +31,8 @@ name       = "t" # "gauss" # "mboot" #
 lN = length(NVec)
 bN = length(betaVec)
 coverage       <- matrix(NaN, bN, lN)
-trueDetect_BH  <- trueDetect_holm  <- trueDetect_sidak <- trueDetect_scopes <- array(NaN, dim = c(bN, lN, Msim))
-falseDetect_BH <- falseDetect_holm <- falseDetect_sidak <- falseDetect_scopes <- array(NaN, dim = c(bN, lN, Msim))
+trueDetect_BH  <- trueDetect_hommel  <- trueDetect_sidak <- trueDetect_scopes <- array(NaN, dim = c(bN, lN, Msim))
+falseDetect_BH <- falseDetect_hommel <- falseDetect_sidak <- falseDetect_scopes <- array(NaN, dim = c(bN, lN, Msim))
 
 # Model specification
 muvec = generate_muvec(mu_name)
@@ -77,8 +77,8 @@ for(n in 1:lN){for(b in 1:bN){
   if(SCoPEStype == "classical"){
     trueDetect_sidak[b, n, ]  = test$NDetect_sidak[1, ]
     falseDetect_sidak[b, n, ] = test$NDetect_sidak[2, ]
-    trueDetect_holm[b, n, ]   = test$NDetect_holm[1, ]
-    falseDetect_holm[b, n, ]  = test$NDetect_holm[2, ]
+    trueDetect_hommel[b, n, ]   = test$NDetect_hommel[1, ]
+    falseDetect_hommel[b, n, ]  = test$NDetect_hommel[2, ]
     trueDetect_BH[b, n, ]     = test$NDetect_BH[1, ]
     falseDetect_BH[b, n, ]    = test$NDetect_BH[2, ]
   }
