@@ -86,6 +86,10 @@ IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm
   }
   TC <- (scopes$hatmu - C) / (scopes$tN * scopes$hatsigma)
 
+  pvals = 1 - cdf_abs(abs(TC[,1]))
+  hatm0 = 2*sum(pvals >= 0.5)
+
+  detectN = sum(scopes$hatUC | scopes$hatLC)
   Tnull <- abs(scopes$hatmu / (scopes$tN * scopes$hatsigma))
   Tnull = sort(Tnull[scopes$hatUC | scopes$hatLC])
   Tnull = Tnull[1:KK]
@@ -114,15 +118,24 @@ IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm
         vapply(1:10, function(k) mean(apply(rsample, 2, function(col) sum(abs(col) > t) >= k )), FUN.VALUE = 0.1),
         FUN.VALUE = rep(0.1, 10)))
   colnames(IVo) <- 1:10
+
+  IVo2 <- t(vapply( Tnull, function(t){
+    lx = length(scopes$x)
+    mm = ifelse(hatm0 != 0, hatm0, 1)
+    vapply(1:10, function(k) mean(apply(rsample[1:mm, ], 2,
+                      function(col) sum(abs(col) > t) >= k )), FUN.VALUE = 0.1)},
+    FUN.VALUE = rep(0.1, 10)))
+  colnames(IVo2) <- 1:10
+
   # return the results
   if(!is.null(scopes$kN)){
     # Global probability of rejection of Gamma(mu) in Gamma(C)
     # if hatmu1C is non-empty
     IV0 = 1 - cdf_abs(scopes$kN)^length(scopes$x)
 
-    return(list(IV0 = IV0, IV0kN = IV0kN, IV = IV,  IVo = IVo,IVk = IVk, IVkabs = IVkabs, IVobs = IVobs,
-                IVloc = IVloc))
+    return(list(IV0 = IV0, IV0kN = IV0kN, IV = IV,  IVo = IVo, IVo2 = IVo2, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs,
+                IVloc = IVloc, hatm0 = hatm0))
   }else{
-    return(list(IV = IV, IVo = IVo, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs, IVloc = IVloc))
+    return(list(IV = IV, IVo = IVo, IVo2 = IVo2, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs, IVloc = IVloc, hatm0 = hatm0))
   }
 }
