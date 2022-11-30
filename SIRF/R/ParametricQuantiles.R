@@ -20,8 +20,12 @@
 #' @return quantile of the maximum of the random variables
 #' @export
 maxGauss_quantile <- function(p, muC){
-  Mpm   = sum(muC$minus && muC$plus)
-  M     = sum(muC$minus) + sum(muC$plus) - 2 * Mpm
+  if(is.list(muC)){
+    Mpm   = sum(muC$minus && muC$plus)
+    M     = sum(muC$minus) + sum(muC$plus) - 2 * Mpm
+  }else{
+    Mpm <- M <- muC
+  }
 
   if(Mpm == 0 && M != 0){
     q <- qnorm(p^(1 / M))
@@ -51,8 +55,12 @@ maxGauss_quantile <- function(p, muC){
 #' @return quantile of the maximum of the random variables
 #' @export
 maxGauss_p <- function(q, muC){
-  Mpm   = sum(muC$minus && muC$plus)
-  M     = sum(muC$minus) + sum(muC$plus) - 2 * Mpm
+  if(is.list(muC)){
+    Mpm   = sum(muC$minus && muC$plus)
+    M     = sum(muC$minus) + sum(muC$plus) - 2 * Mpm
+  }else{
+    Mpm <- M <- muC
+  }
 
   if(Mpm == 0 && M != 0){
     p <- pnorm(q)^M
@@ -78,8 +86,12 @@ maxGauss_p <- function(q, muC){
 #' @return quantile of the maximum of the random variables
 #' @export
 maxT_quantile <- function(p, muC, df){
-  Mpm   = sum(muC$minus & muC$plus)
-  M     = sum(muC$minus) + sum(muC$plus) - Mpm
+  if(is.list(muC)){
+    Mpm   = sum(muC$minus && muC$plus)
+    M     = sum(muC$minus) + sum(muC$plus) - 2 * Mpm
+  }else{
+    Mpm <- M <- muC
+  }
 
   if(Mpm == 0 && M != 0){
     q <- qt(p = p^(1 / M), df = df)
@@ -110,8 +122,12 @@ maxT_quantile <- function(p, muC, df){
 #' @return quantile of the maximum of the random variables
 #' @export
 maxT_p <- function(q, muC, df){
-  Mpm   = sum(muC$minus & muC$plus)
-  M     = sum(muC$minus) + sum(muC$plus) - Mpm
+  if(is.list(muC)){
+    Mpm   = sum(muC$minus && muC$plus)
+    M     = sum(muC$minus) + sum(muC$plus) - 2 * Mpm
+  }else{
+    Mpm <- M <- muC
+  }
 
   if(Mpm == 0 && M != 0){
     p <- pt(q = q, df = df)^M
