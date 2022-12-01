@@ -11,7 +11,7 @@ library(tidyverse)
 library(SIRF)
 
 source("Auxillary_fcns.R")
-today = "2022_22_9_"
+today = "2022_01_12_"
 #-------------------------------------------------------------------------------
 mu_name = "3"
 SCoPEStype = "classical" # "extraction"
@@ -22,7 +22,8 @@ alpha = 0.1
 C     = c(0,3)
 
 NVec    = c(20, 50, 1e2, 2e2, 5e2, 10e2)
-betaVec = c(666, 10, 5, 3, 2, 1-0.01, alpha )
+betaVec = c(666, 42, 10, 5, 3, 2, 1 - alpha, alpha )
+
 
 # variables: q estimation
 name       = "t" # "gauss" # "mboot" #
@@ -55,12 +56,15 @@ for(n in 1:lN){for(b in 1:bN){
   if(betaVec[b] < 1){
     kN     = get_SCBquant(betaVec[b], NVec[n], muvec)
     mu1est = "thickening"
-  }else if(b != bN){
-    kN     = log(NVec[n]) / betaVec[b]
-    mu1est = "thickening"
-  }else{
+  }else if(b == 1){
     kN = 1
     mu1est = NULL
+  }else if(b == 2){
+    kN = 1
+    mu1est = "m0"
+  }else{
+    kN     = log(NVec[n]) / betaVec[b]
+    mu1est = "thickening"
   }
 
   # Generate method list
