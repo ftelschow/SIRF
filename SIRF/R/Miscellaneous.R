@@ -389,9 +389,12 @@ method_gen <- function(name, SCoPEStype, mu1est, N, kN, m0 = NULL, R = NULL){
     q_method$R          = R
     q_method$kN = kN
   }
-  if(mu1est == "m0"){
-    q_method$m0 = m0
+  if(!is.null(mu1est)){
+    if(mu1est == "m0"){
+      q_method$m0 = m0
+    }
   }
+
   return(q_method)
 }
 

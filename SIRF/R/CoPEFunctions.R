@@ -423,12 +423,13 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
       hatsigma = apply(Y, 1, sd)
     }
 
-    if(q_method$mu1Cest == "m0"){
-      pvals <- apply(Y, 1, function(v) t.test(x = v,
+    if(!is.null(q_method$mu1Cest)){
+      if(q_method$mu1Cest == "m0"){
+        pvals <- apply(Y, 1, function(v) t.test(x = v,
                                                 alternative = "two.sided",
                                                 conf.level = 1-alpha)$p.value)
-      q_method$m0 = min(2*sum(pvals >= 0.5), length(pvals))
-
+        q_method$m0 = min(2*sum(pvals >= 0.5), length(pvals))
+      }
     }
 
     # Get the SCoPES for the method
@@ -439,12 +440,18 @@ sim_SCoPES <- function(Msim, N, alpha, C, q_method, model, I = NULL,
 
     # Save the useful variables from the simulation
     hatq[m]    <- res_m$q
-    hatmu1C$minus[, m] <- ifelse(q_method$mu1Cest != "m0",
-                                 res_m$hatmu1C$minus,
-                                 rep(T, length(model$x)))
-    hatmu1C$plus[, m]  <- ifelse(q_method$mu1Cest != "m0",
-                                 res_m$hatmu1C$plus,
-                                 rep(T, length(model$x)))
+    if(!is.null(q_method$mu1Cest)){
+      if(q_method$mu1Cest == "m0"){
+        hatmu1C$minus[, m] <- rep(T, length(model$x))
+        hatmu1C$plus[, m]  <- rep(T, length(model$x))
+      }else{
+        hatmu1C$minus[, m] <- res_m$hatmu1C$minus
+        hatmu1C$plus[, m]  <- res_m$hatmu1C$plus
+      }
+    }else{
+      hatmu1C$minus[, m] <- res_m$hatmu1C$minus
+      hatmu1C$plus[, m]  <- res_m$hatmu1C$plus
+    }
     detectL[,, m]      <- res_m$hatLC
     detectU[,, m]      <- res_m$hatUC
     Lcontain[, m]      <- res_m$Lcontain_loc
