@@ -17,12 +17,12 @@
   # Variables: General
   N     = 1e2
   Ntrue = 80
-  mcorrect = "hommel" # "bonferroni" # "holm" #  "sidak" #
+  mcorrect = "hommel" # "sidak" #  "holm" #
 
-  mu_name    = "1" # "2" #   "3" # "4" #
+  mu_name    = "1" #  "2" #   "3" # "4" #
   SCoPEStype = "classical" # "extraction"
-  mu1est     = "m0" #  "thickening" #  NULL #
-  kNtype =  "SCB" # "log" #
+  mu1est     = "thickening" # "m0" #   NULL #
+  kNtype =  "log" # "SCB" #
   betaN  = 1-0.1
   k_fac  = 10
 
@@ -30,12 +30,15 @@
   alpha = 0.1
   B     = c(0, 3)
 
+  NN = c(30, 20, 30)
+  NN = 2*c(30, 20, 30)
+
   NVec    = c(20, 50, 1e2, 2e2, 5e2, 10e2)
   betaVec = c(0.99, 0.2, 0.5, 0.15, 0.1, 0.05)
 
   # Model parameters
   if(mu_name == "1"){
-    NDelta = c(30, 20, 30, 0, 0)
+    NDelta = c(NN[1], NN[2], NN[3], 0, 0)
     muvec = generate_muvec(NDelta)
   }else if(mu_name == "2"){
     NDelta = c(0, Ntrue, 0, 0, 0)
@@ -104,7 +107,7 @@
    # pvals_adjust = p.adjust(pvals, method = "sidak")
     detect_holm  = MPT_Detect(alpha, pvals, mcorrect)
     # Benyamini-Hochberg-correction
-    detect_BH <- MPT_Detect(alpha, pvals, "BH")
+    detect_BH <- FDR_control(alpha, pvals, "BH")
 
     t_detect_h <- sum(detect_holm[I1])
     f_detect_h <- sum(detect_holm[I0])
@@ -146,6 +149,6 @@ method2$mu1Cest = list(minus = !detect_BH, plus = !detect_BH)
 #                 method = method2,  R = R, mu = model$mu(model$x))
 #test[1,4] = scopes2$NtrueDetect
 test
-#IVs
+IVs
 IV$hatm0
 
