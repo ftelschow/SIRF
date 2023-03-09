@@ -398,6 +398,102 @@ method_gen <- function(name, SCoPEStype, mu1est, N, kN, m0 = NULL, R = NULL){
   return(q_method)
 }
 
+#' This function generates a list with the required input for different
+#' methods to estimate the quantile function q of a SCoPE set.
+#'
+#' @param name String name of the implemented method to
+#' estimate the quantile function
+#' @param ... Optional parameters for the quantile estimation method
+#' @return q.method
+#' @export
+q_method_gen <- function(name, ...){
+  # Get the input arguments
+  arguments = as.list(match.call())
+
+  # Initialize the q_method list, which will be the output
+  q.method <- list(
+    name = name
+  )
+
+  # Fill the q_method list for different quantile function estimation
+  # methods
+  if(q.method$name %in% c("mboot", "fair.mboot")){
+    # Use default values for the multiplier bootstrap, if
+    # the values are not provided in the input arguments.
+    if(!("Boottype" %in% arguments)){
+      Boottype = "t"
+    }
+    if(!("weights" %in% arguments)){
+      weights = "rademacher"
+    }
+    if(!("Mboots" %in% arguments)){
+      Mboots = 5e3
+    }
+
+    q.method$Boottype   = Boottype
+    q.method$weights    = weights
+    q.method$Mboots     = Mboots
+    q.method$R          = R
+
+    # Add the fairness parameters if the bootstrap
+    # should be fair
+    if(q.method$name == "fair.mboot"){
+      q.method$fair.intervals = fair.intervals
+      if(!("fair.type" %in% arguments)){
+        q.method$fair.type = "linear"
+      }else{
+        q.method$fair.type = fair.type
+      }
+
+      if(!("fair.niter" %in% arguments)){
+        q.method$fair.niter = 10
+      }else{
+        q.method$fair.niter = fair.niter
+      }
+    }
+  }else if(q.method$name == "t.iid"){
+    q.method$df      = N - 1
+  }
+
+  return(q.method)
+}
+
+#' This function generates a list with the required input for different
+#' methods to estimate the quantile function q of a SCoPE set.
+#'
+#' @param name String name of the implemented method to
+#' estimate the quantile function
+#' @param ... Optional parameters for the quantile estimation method
+#' @return Scale field
+#' @export
+Preimage_method_gen <- function(name, ...){
+  # Get the input arguments
+  arguments = as.list(match.call())
+
+  # Initialize the Preimage.method list, which will be the output
+  Preimage.method <- list(
+    name = name
+  )
+
+  # Fill the Preimage.method list for different Preimage estimation
+  # methods
+  if(Preimage.method$name == "thickening"){
+    Preimage.method$kN = kN
+
+  }else if(Preimage.method$name == "true"){
+    Preimage.method$kN = 0
+    Preimage.method$mu = mu
+  }else if(Preimage.method$name == "SCB"){
+    Preimage.method$kN = 0
+    Preimage.method$mu = mu
+  }else if(Preimage.method$name == "Storey.iid"){
+    Preimage.method$m0 = m0
+  }
+
+  return(Preimage.method)
+}
+
+
 #' @export
 plot_col <- function(statistic, C, detect, x = NULL,
                      xlab = '', ylab = '', title = '',

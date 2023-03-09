@@ -111,115 +111,103 @@ hatUc <- function(c, hatmu, hatsigma, tN, q, mu = NULL, inclusion = "inequal" ){
 #' }
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
-SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN, method = "extraction", R = NULL,
-                   I = NULL, inclusion = list(L = "inequal", U = "inequal"),
+SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN,
+                   q.method,
+                   Preimage.method,
+                   inclusion = list(L = "inequal", U = "inequal"),
                    mu = NULL){
   #-----------------------------------------------------------------------------
   # Get standard values and catch wrong inputs
 
   # Get the number of levels and make C a column matrix if
   # it is just one function.
-  if(is.null(dim(C))){
-    num_levels = 1
-    C = t(t(C))
-  }else{
-    num_levels = dim(C)[2]
+  num.levels = list()
+  if(!is.null(C$minus)){
+    if(is.null(dim(C$minus))){
+      num.levels$minus = 1
+      C$minus = t(t(C$minus))
+    }else{
+      num.levels$minus = dim(C$minus)[2]
+    }
   }
+  if(!is.null(C$plus)){
+    if(is.null(dim(C$plus))){
+      num.levels$plus = 1
+      C$plus = t(t(C$plus))
+    }else{
+      num.levels$plus = dim(C$plus)[2]
+    }
+  }
+
 
   # Dimension of the tube defining matrix
-  dC <- dim(C)
-  rownames(C) <- round(x,3)
-  colnames(C) <- 1:dC[2]
-  Cnames <- list(x = round(x,3), c = 1:dC[2])
+  rownames(C$minus) <- round(x,3)
+  rownames(C$plus) <- round(x,3)
 
-  # Get standard values for method, if not specified
-  if(method %in% c("SCB", "selection", "extraction", "lrelevance", "relevance",
-                   "lequivalence", "equivalence") && !is.null(R) ){
-    method <- list(name      = "mboot",
-                   Boottype  = "t",
-                   weights   = "rademacher",
-                   Mboots    = 2e4,
-                   R         = R,
-                   SCoPEStype = method,
-                   mu1Cest   = "thickening",
-                   kN        = log(tN^-2) / 5
-                   )
-  }
-  # Get standard values for the indices of C^\pm if not specified
-  if(is.null(I)){
-    if(method$SCoPEStype %in% c( "extraction", "relevance", "lrelevance",
-                         "equivalence", "lequivalence")){
-      Iminus <- seq(1, dC[2], 2)
-      Iplus  <- seq(2, dC[2], 2)
-    }else{
-      Iminus <- 1:dC[2]
-      Iplus  <- 1:dC[2]
-    }
-    I = list(minus = Iminus, plus = Iplus)
-  }else if(is.list(I)){
-    if(length(I) == 2){
-      Iminus = I$minus
-      Iminus = I$plus
-    }else{
-      stop("I must be a list with two entries indicating which columns of
-           C belong to C^- and which to C^+")
-    }
-  }else{
-    stop("I must be a list with two entries indicating which columns of
-           C belong to C^- and which to C^+")
-  }
-
-  # Ensure that for the tests C defines a single tube
-  if(method$SCoPEStype %in% c("relevance", "lrelevance",
-                              "equivalence", "lequivalence")){
-    if(dC[2] > 2){
-      stop("For 'relevance'', 'lrelevance', 'equivalence', 'lequivalence' C must
-           have two columns defining the considered band.")
-    }
-  }else if(method$SCoPEStype == "classical"){
-    if(num_levels > 1){
-      stop("For 'classical' SCoPES C must be a vector or column matrix with 1
-           column.")
-    }
-  }
+  # Cnames <- list(x = round(x,3), c = 1:dC$minus[2])
 
   #-----------------------------------------------------------------------------
   # Main code of the algorithm
-
-  # Estimate the preimage using the true set or the thickened set
-  if(method$SCoPEStype != "SCB"){
-    if(is.null(method$mu1Cest)){
-      hatmu1C =  PreimageC(C = C, hatmu = mu, hatsigma = rep(0, length(hatmu)),
-                           tN = tN, kN = 0, method = method$SCoPEStype)
-    }else if(is.list(method$mu1Cest)){
-      hatmu1C = method$mu1Cest
-    }else if(method$mu1Cest == "thickening"){
-      hatmu1C =  PreimageC(C = C, hatmu = hatmu, hatsigma = hatsigma,
-                           tN = tN, kN = method$kN, method = method$SCoPEStype)
-    }else if(method$mu1Cest == "m0"){
-      hatmu1C = method$m0
-    }
-  }else{
-    hatmu1C = list(minus = rep(TRUE, length(hatmu)), plus = rep(TRUE, length(hatmu)))
+  #-----------------------------------------------------------------------------
+  #-----------------------------------------------------------------------------
+  # Estimate the preimage
+  if(Preimage.method$name == "thickening"){
+    hatmu1C = PreimageC_thickening(
+                    C = C, hatmu = hatmu, hatsigma = hatsigma,
+                    tN = tN, kN = Preimage.method$kN)
+  }else if(Preimage.method$name == "true"){
+    hatmu1C = PreimageC_thickening(
+                    C = C, hatmu = Preimage.method$mu, hatsigma = hatsigma,
+                    tN = tN, kN = Preimage.method$kN)
+  }else if(Preimage.method$name == "SCB"){
+    hatmu1C = list(minus = rep(TRUE, length(hatmu)),
+                   plus  = rep(TRUE, length(hatmu)))
+  }else if(Preimage.method$name == "Storey.iid"){
+    hatmu1C = Preimage.method$m0
   }
 
+  #-----------------------------------------------------------------------------
   # Estimate the quantile for the SCoPES
-  if(method$name == "mboot"){
+  fair.q = NULL
+  if(q.method$name == "mboot"){
     q = MultiplierBootstrapSplit(alpha   = alpha,
-                                 R       = method$R,
+                                 R       = q.method$R,
                                  minus   = hatmu1C$minus,
                                  plus    = hatmu1C$plus,
-                                 Mboots  = method$Mboots,
-                                 method  = method$Boottype,
-                                 weights = method$weights)$q
+                                 Mboots  = q.method$Mboots,
+                                 method  = q.method$Boottype,
+                                 weights = q.method$weights)$q
     if(is.infinite(q)){
       q = 0
     }
-  }else if(method$name == "gauss"){
+  }else if(q.method$name == "fair.mboot"){
+    samples = MultiplierBootstrapSplit(alpha   = alpha,
+                                 R       = q.method$R,
+                                 minus   = hatmu1C$minus,
+                                 plus    = hatmu1C$plus,
+                                 Mboots  = q.method$Mboots,
+                                 method  = q.method$Boottype,
+                                 weights = q.method$weights)$samples
+    fair.q = OptimizeFairThreshold1D(samples,
+                                x,
+                                fair.intervals = q.method$fair.intervals,
+                                fair.type = q.method$fair.type,
+                                crit.set  = hatmu1C,
+                                alpha  = alpha,
+                                niter  = q.method$fair.niter,
+                                subI   = NULL,
+                                print.coverage = TRUE )
+    q = fair.q$q
+  }else if(q.method$name == "gauss.iid"){
     q = maxGauss_quantile(p = 1 - alpha, muC = hatmu1C)
-  }else if(method$name == "t"){
-    q = maxT_quantile(p = 1 - alpha, muC = hatmu1C, df = method$df)
+  }else if(q.method$name == "t.iid"){
+    q = maxT_quantile(p = 1 - alpha, muC = hatmu1C, df = q.method$df)
   }
+
+  #-----------------------------------------------------------------------------
+  # Get the estimates of the excursion sets
+  Iminus = dim(C$minus)[2]
+  Iplus  = dim(C$minus)[2]
 
   # Initialize matrizes for the CoPE sets and for the rejections
   hatLC        <- t(t(matrix(FALSE, length(hatmu), length(Iminus))))
@@ -229,57 +217,40 @@ SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN, method = "extraction", R = 
   DetectL  <- t(t(matrix(NA, length(hatmu), length(Iminus))))
   DetectU  <- t(t(matrix(NA, length(hatmu), length(Iplus))))
 
-  k_minus <- k_plus <- 0
-  for(k in 1:num_levels){
-    # Compute the lower and upper excursion confidence set, if required
-    if(k %in% Iminus){
-      hatL <- hatLc(C[, k], hatmu, hatsigma, tN, q, mu = mu, inclusion = inclusion$L )
-      k_minus <- k_minus + 1
-      # Fill the hatLC and estUc matrix and save where correct inclusions appear
+  for(k in 1:max(num.levels$minus, num.levels$plus)){
+    # Lower excursion set
+    if(k <= num.levels$minus){
+      # Compute the lower and upper excursion confidence set, if required
+      hatL <- hatLc(C$minus[, k], hatmu, hatsigma, tN, q,
+                    mu = mu, inclusion = inclusion$L )
+      # Fill the hatLC etc matrix and save where correct inclusions appear
       if(!is.null(mu)){
-        hatLC[, k_minus]        <- hatL$hatLc
-        Lcontain_loc[, k_minus] <- hatL$contain
-        DetectL[, k_minus]      <- hatL$detect
+        hatLC[, k]        <- hatL$hatLc
+        Lcontain_loc[, k] <- hatL$contain
+        DetectL[, k]      <- hatL$detect
       }else{
-        hatLC[, k_minus] <- hatL
+        hatLC[, k] <- hatL
       }
     }
-    if(k %in% Iplus){
-      hatU <- hatUc(C[, k], hatmu, hatsigma, tN, q, mu = mu, inclusion = inclusion$U )
-      k_plus <- k_plus + 1
-      # Fill the hatLC and estUc matrix and save where correct inclusions appear
+    # Upper excursion set
+    if(k <= num.levels$plus){
+      # Compute the lower and upper excursion confidence set, if required
+      hatU <- hatUc(C$plus[, k], hatmu, hatsigma, tN, q,
+                    mu = mu, inclusion = inclusion$U )
+      # Fill the hatUC matrix and save where correct inclusions appear
       if(!is.null(mu)){
-        hatUC[, k_plus]         <- hatU$hatUc
-        Ucontain_loc[, k_plus]  <- hatU$contain
-        DetectU[, k_plus]       <- hatU$detect
+        hatUC[, k]        <- hatU$hatUc
+        Ucontain_loc[, k] <- hatU$contain
+        DetectU[, k]      <- hatU$detect
       }else{
-        hatUC[, k_plus]  <- hatU
+        hatUC[, k] <- hatU
       }
     }
   }
 
   if(!is.null(mu)){
-    # Compute the coverage properties
-    if(method$SCoPEStype %in% c("relevance", "lrelevance",
-                                  "equivalence", "lequivalence")){
-      Lcontain_loc <- Lcontain_loc
-      Ucontain_loc <- Ucontain_loc
-    }else if(method$SCoPEStype %in% c("extraction", "classical")){
-      Lcontain_loc <- apply(t(t(Lcontain_loc)), 1, all)
-      Ucontain_loc <- apply(t(t(Ucontain_loc)), 1, all)
-    }else if(method$SCoPEStype %in% c("selection", "SCB")){
-      Lcontain_loc <- apply(t(t(Lcontain_loc)), 1, all)
-      Ucontain_loc <- apply(t(t(Ucontain_loc)), 1, all)
-    }else{
-      stop("q_method$SCoPEStype must be either 'classical', 'extraction',
-            'selection', 'lrelevance', 'relevance', 'lequivalence',
-           'equivalence'.")
-    }
-
     # Set the col and row names for the output variables
-    rownames(hatLC) <- rownames(hatUC) <- rownames(C)
-    colnames(hatLC) <- colnames(C)[Iminus]
-    colnames(hatUC) <- colnames(C)[Iplus]
+    rownames(hatLC) <- rownames(hatUC) <- rownames(C$minus)
 
     Lcontain <- all(Lcontain_loc)
     Ucontain <- all(Ucontain_loc)
@@ -288,17 +259,27 @@ SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN, method = "extraction", R = 
     t_detect <- sum(t(DetectL), na.rm = T) + sum(t(DetectU), na.rm = T)
     f_detect <- sum(t(DetectL) == 0, na.rm = T) + sum(t(DetectU) == 0, na.rm = T)
 
-    return(list(hatLC = hatLC, hatUC = hatUC, q = q, hatmu1C = hatmu1C, kN = method$kN,
-                contain = contain, Lcontain = Lcontain, Ucontain = Ucontain,
-                Lcontain_loc = Lcontain_loc, Ucontain_loc = Ucontain_loc,
-                LDetect = DetectL, UDetect = DetectU,
-                NtrueDetect = t_detect, NfalseDetect = f_detect,
+    evaluation <- list()
+    evaluation$contain  = contain
+    evaluation$Lcontain = Lcontain
+    evaluation$Ucontain = Ucontain
+    evaluation$Lcontain_loc = Lcontain_loc
+    evaluation$Ucontain_loc = Ucontain_loc
+    evaluation$Ldetect  = DetectL
+    evaluation$Udetect  = DetectU
+    evaluation$num_true_detect  = t_detect
+    evaluation$num_false_detect = f_detect
+
+    return(list(hatLC = hatLC, hatUC = hatUC, q = q, hatmu1C = hatmu1C,
+                q.method = q.method, Preimage.method = Preimage.method,
+                evaluation = evaluation, fair.q = fair.q,
                 mu = mu, x = x, tN = tN, hatmu = hatmu, hatsigma = hatsigma,
-                C = C, I = I, SCoPEStype = method$SCoPEStype))
+                C = C))
   }else{
-    return(list(hatLC = hatLC, hatUC = hatUC, q = q, hatmu1C = hatmu1C, kN =  method$kN,
+    return(list(hatLC = hatLC, hatUC = hatUC, q = q, hatmu1C = hatmu1C,
+                q.method = q.method, Preimage.method = Preimage.method,
                 x = x, tN = tN, hatmu = hatmu, hatsigma = hatsigma,
-                C = C, I = I, SCoPEStype = method$SCoPEStype))
+                C = C))
   }
 }
 
@@ -325,38 +306,32 @@ SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN, method = "extraction", R = 
 #' }
 #' @return Standard error under the assumption the data is Gaussian
 #' @export
-plot_SCoPES <- function(scopes, index_C = 1,
+plot_SCoPES <- function(scopes, index_C = c(1,1),
                         xlab = '', ylab = '', title = '',
-                        mu = NULL, statistic = NULL){
-  if(scopes$SCoPEStype == "extraction"){
-    index_C <- 2 * index_C - 1
-    Delta = 1
-  }else{
-    Delta = 0
-  }
+                        mu = NULL, statistic = NULL, ylim = NULL){
+  # If no statistic is specified use the estimator
   if(is.null(statistic)){
     y = scopes$hatmu
   }else{
     y = statistic
   }
   # Get the correct
-  C = scopes$C[, c(index_C, index_C + Delta)]
   # Get a color vector indicating the "red" (upper excursions) and
   # the blue (lower excursions) set
   colVec <- rep("black", length(scopes$hatmu))
-  colVec[scopes$hatLC[, index_C]] <- "blue"
-  colVec[scopes$hatUC[, index_C]] <- "red"
+  colVec[scopes$hatLC[, index_C[1]]] <- "blue"
+  colVec[scopes$hatUC[, index_C[2]]] <- "red"
   plot(scopes$x, y, col = colVec,
-       pch = 18, xlab = xlab, ylab = ylab, main = title)
-  if(scopes$SCoPEStype == "extraction"){
-    lines(scopes$x, C[,1], lty = 2, col = "blue")
-    lines(scopes$x, C[,2], lty = 2, col = "red")
+       pch = 18, xlab = xlab, ylab = ylab, main = title,
+       ylim = ylim)
+  if( any(scopes$C$minus[, index_C[1]] != scopes$C$plus[, index_C[2]] ) ){
+    lines(scopes$x, scopes$C$minus[, index_C[1]], lty = 1, col = "blue")
+    lines(scopes$x, scopes$C$plus[, index_C[2]], lty = 1, col = "red")
   }else{
-    lines(scopes$x, C[,1], lty = 1, col = "orchid3")
+    lines(scopes$x, scopes$C$minus[, index_C[1]], lty = 1, col = "orchid3")
   }
-  lines(scopes$x, scopes$q * scopes$hatsigma * scopes$tN, lty = 2, col = "orchid3")
-  lines(scopes$x, -scopes$q * scopes$hatsigma * scopes$tN, lty = 2, col = "orchid3")
 }
+
 #' This functions computes the SCoPES corresponding to an estimator and a set
 #' of functions given as a matrix with columns being the cut-off functions.
 #'

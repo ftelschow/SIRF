@@ -108,7 +108,7 @@ IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm
   IVobs <- prod(ifelse(any(scopes$hatLC), IVloc[scopes$hatLC], 1)) *
                   prod(ifelse(any(scopes$hatUC), IVloc[scopes$hatUC], 1))
 
-  rsample = matrix(rcdf(length(scopes$x) * Msim, ...), nrow = length(scopes$x))
+  rsample = abs(matrix(rcdf(length(scopes$x) * Msim, ...), nrow = length(scopes$x)))
   IVk <- mean(apply(rsample, 2, function(col) sum(col > scopes$q) >= sum(scopes$hatUC) ) &
                 apply(rsample, 2, function(col) sum(col < -scopes$q) >= sum(scopes$hatLC) ))
   IVkabs <- mean(apply(rsample, 2, function(col) sum(abs(col) > scopes$q) >= sum(scopes$hatUC) + sum(scopes$hatLC) ))
@@ -121,21 +121,25 @@ IVs_IID <- function(scopes, cdf = pnorm, cdf_abs = VGAM::pfoldnorm, rcdf = rnorm
 
   IVo2 <- t(vapply( Tnull, function(t){
     lx = length(scopes$x)
-    mm = ifelse(hatm0 != 0, hatm0, 1)
-    vapply(1:10, function(k) mean(apply(rsample[1:mm, ], 2,
+#    mm = ifelse(hatm0 != 0, hatm0, 1)
+#    vapply(1:10, function(k) mean(apply(rsample[1:mm, ], 2,
+#                                        function(col) sum(abs(col) > t) >= k )), FUN.VALUE = 0.1)},
+    vapply(1:10, function(k) mean(apply(rsample[1:(lx - detectN + 1), ], 2,
                       function(col) sum(abs(col) > t) >= k )), FUN.VALUE = 0.1)},
     FUN.VALUE = rep(0.1, 10)))
-  colnames(IVo2) <- 1:10
-
+  IVo3 <- vapply( (0:(length(scopes$x)-2)), function(k)
+                  mean(colSums(abs(rsample[1:(length(scopes$x) - k), ] > scopes$q)) >= 1),
+                  FUN.VALUE = 0.1)
+  names(IVo3) <- length(scopes$x) - 0:(length(scopes$x)-2)
   # return the results
   if(!is.null(scopes$kN)){
     # Global probability of rejection of Gamma(mu) in Gamma(C)
     # if hatmu1C is non-empty
     IV0 = 1 - cdf_abs(scopes$kN)^length(scopes$x)
 
-    return(list(IV0 = IV0, IV0kN = IV0kN, IV = IV,  IVo = IVo, IVo2 = IVo2, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs,
+    return(list(IV0 = IV0, IV0kN = IV0kN, IV = IV,  IVo = IVo, IVo2 = IVo2, IVo3 = IVo3, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs,
                 IVloc = IVloc, hatm0 = hatm0))
   }else{
-    return(list(IV = IV, IVo = IVo, IVo2 = IVo2, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs, IVloc = IVloc, hatm0 = hatm0))
+    return(list(IV = IV, IVo = IVo, IVo2 = IVo2, IVo3 = IVo3, IVk = IVk, IVkabs = IVkabs, IVobs = IVobs, IVloc = IVloc, hatm0 = hatm0))
   }
 }
