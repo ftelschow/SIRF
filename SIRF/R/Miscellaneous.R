@@ -485,7 +485,6 @@ Preimage_method_gen <- function(name, ...){
     Preimage.method$mu = mu
   }else if(Preimage.method$name == "SCB"){
     Preimage.method$kN = 0
-    Preimage.method$mu = mu
   }else if(Preimage.method$name == "Storey.iid"){
     Preimage.method$m0 = m0
   }

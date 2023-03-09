@@ -210,12 +210,12 @@ SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN,
   Iplus  = dim(C$minus)[2]
 
   # Initialize matrizes for the CoPE sets and for the rejections
-  hatLC        <- t(t(matrix(FALSE, length(hatmu), length(Iminus))))
-  hatUC        <- t(t(matrix(FALSE, length(hatmu), length(Iplus))))
-  Lcontain_loc <- t(t(matrix(FALSE, length(hatmu), length(Iminus))))
-  Ucontain_loc <- t(t(matrix(FALSE, length(hatmu), length(Iplus))))
-  DetectL  <- t(t(matrix(NA, length(hatmu), length(Iminus))))
-  DetectU  <- t(t(matrix(NA, length(hatmu), length(Iplus))))
+  hatLC        <- t(t(matrix(FALSE, length(hatmu), Iminus)))
+  hatUC        <- t(t(matrix(FALSE, length(hatmu), Iplus)))
+  Lcontain_loc <- t(t(matrix(FALSE, length(hatmu), Iminus)))
+  Ucontain_loc <- t(t(matrix(FALSE, length(hatmu), Iplus)))
+  DetectL  <- t(t(matrix(NA, length(hatmu), Iminus)))
+  DetectU  <- t(t(matrix(NA, length(hatmu), Iplus)))
 
   for(k in 1:max(num.levels$minus, num.levels$plus)){
     # Lower excursion set

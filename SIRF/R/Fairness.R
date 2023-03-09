@@ -213,6 +213,13 @@ OptimizeFairThreshold1D <- function(samples,
     inter = s$inter
   }
 
+  # Get the stepsize for the interval iteration
+  if( sum(crit.set$minus)/2 + sum(crit.set$minus)/2 > 0.75*length(x)  ){
+    stepsize = 3
+  }else{
+    stepsize = 1.5
+  }
+
   # Compute the fair threshold function
   test = FairThreshold1D(samples = samples,
                          x = x,
@@ -236,7 +243,7 @@ OptimizeFairThreshold1D <- function(samples,
     if( abs(diffCoverage) > eps ){
       if(count == 0){
         if(diffCoverage < 0){
-          a = c(alpha, 1.5 * alpha)
+          a = c(alpha, stepsize * alpha)
         }else{
           a = c(0.1 * alpha, alpha)
         }
