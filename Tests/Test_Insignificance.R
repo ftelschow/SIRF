@@ -16,13 +16,13 @@
   #-------------------------------------------------------------------------------
   # Variables: General
   N     = 1e2
-  Ntrue = 80
+  Ntrue = 800
   mcorrect = "hommel" # "sidak" #  "holm" #
 
   mu_name    = "1" #  "2" #   "3" # "4" #
   SCoPEStype = "classical" # "extraction"
   mu1est     = "thickening" # "m0" #   NULL #
-  kNtype =  "log" # "SCB" #
+  kNtype = "log" # "m0" # "SCB" #
   betaN  = 1-0.1
   k_fac  = 10
 
@@ -37,15 +37,15 @@
   betaVec = c(0.99, 0.2, 0.5, 0.15, 0.1, 0.05)
 
   # Model parameters
-  if(mu_name == "1"){
+  if(mu_name == "2"){
     NDelta = c(NN[1], NN[2], NN[3], 0, 0)
     muvec = generate_muvec(NDelta)
-  }else if(mu_name == "2"){
-    NDelta = c(0, Ntrue, 0, 0, 0)
+  }else if(mu_name == "1"){
+    NDelta = c(0, 0, Ntrue,0, 0)
     muvec = generate_muvec(NDelta)
-  }else if(mu_name == "3"){
-    muvec = sin((1:100)/2/pi)
   }else if(mu_name == "4"){
+    muvec = sin((1:100)/2/pi)
+  }else if(mu_name == "3"){
     NDelta = c(5, 75, 0, 0, 0)
     muvec = generate_muvec(NDelta)
   }

@@ -39,7 +39,7 @@ generateData <- function(N, muvec, B, truesigma, SCoPEStype){
 
 generate_muvec <- function(NDelta, mu_name = "1"){
     # Variables for the tubes
-    if(mu_name == "1"){
+    if(mu_name == "2"){
       muu   = c(-0.3, 0, 0.2, 3, 4)
       muvec = c(rep(muu[1], NDelta[1]),
                 rep(muu[2], NDelta[2]),
@@ -47,7 +47,7 @@ generate_muvec <- function(NDelta, mu_name = "1"){
                 rep(muu[4], NDelta[4]),
                 rep(muu[5], NDelta[5]))
       muvec = muvec[sample(1:length(muvec), replace = FALSE)]
-    }else if(mu_name == "2"){
+    }else if(mu_name == "1"){
       muvec = c(rep(NDelta[1], NDelta[2]), rep(0,  NDelta[3]))
     }
     return(muvec)
