@@ -115,7 +115,8 @@ SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN,
                    q.method,
                    Preimage.method,
                    inclusion = list(L = "inequal", U = "inequal"),
-                   mu = NULL){
+                   mu = NULL,
+                   print.coverage = TRUE){
   #-----------------------------------------------------------------------------
   # Get standard values and catch wrong inputs
 
@@ -188,16 +189,22 @@ SCoPES <- function(alpha, C, x, hatmu, hatsigma, tN,
                                  Mboots  = q.method$Mboots,
                                  method  = q.method$Boottype,
                                  weights = q.method$weights)$samples
-    fair.q = OptimizeFairThreshold1D(samples,
-                                x,
-                                fair.intervals = q.method$fair.intervals,
-                                fair.type = q.method$fair.type,
-                                crit.set  = hatmu1C,
-                                alpha  = alpha,
-                                niter  = q.method$fair.niter,
-                                subI   = NULL,
-                                print.coverage = TRUE )
-    q = fair.q$q
+    if( !(all(!hatmu1C$minus) && all(!hatmu1C$plus)) ){
+      fair.q = OptimizeFairThreshold1D(samples,
+                                       x,
+                                       fair.intervals = q.method$fair.intervals,
+                                       fair.type = q.method$fair.type,
+                                       crit.set  = hatmu1C,
+                                       alpha  = alpha,
+                                       niter  = q.method$fair.niter,
+                                       subI   = NULL,
+                                       print.coverage = print.coverage )
+      q = fair.q$q
+    }else{
+      fair.q = NULL
+      q = rep(0, length(x))
+    }
+
   }else if(q.method$name == "gauss.iid"){
     q = maxGauss_quantile(p = 1 - alpha, muC = hatmu1C)
   }else if(q.method$name == "t.iid"){
