@@ -468,7 +468,7 @@ q_method_gen <- function(name, ...){
 #' @export
 Preimage_method_gen <- function(name, ...){
   # Get the input arguments
-  arguments = as.list(match.call())
+#  arguments = as.list(match.call())
 
   # Initialize the Preimage.method list, which will be the output
   Preimage.method <- list(
