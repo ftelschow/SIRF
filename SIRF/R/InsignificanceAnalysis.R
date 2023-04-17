@@ -10,7 +10,8 @@
 # Developer notes:
 #
 #------------------------------------------------------------------------------#
-#' This functions computes some possible insignificance values.
+#' This functions computes some possible insignificance values for the simple iid
+#' model.
 #'
 #' @inheritParams PreimageC
 #' @param SCoPEStype vector of same length as mu giving the possible alternative
